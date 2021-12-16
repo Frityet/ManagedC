@@ -5,8 +5,6 @@
  * @version 1.0
  * @date 2021-11-22
  * 
- * @copyright Copyright Amrit Bhogal(c) 2021
- * 
  */
 
 #include "managed.h"
