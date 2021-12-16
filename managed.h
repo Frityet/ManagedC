@@ -5,8 +5,6 @@
  * @version 1.0 
  * @date    2021-11-22
  * 
- * @copyright Copyright Amrit Bhogal(c) 2021
- * 
  */
 
 #ifndef MC_SERVER_MANAGER_MANAGED_
