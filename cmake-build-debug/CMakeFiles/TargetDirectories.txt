@@ -1,0 +1,3 @@
+/home/frityet/Documents/ManagedC/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/frityet/Documents/ManagedC/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/frityet/Documents/ManagedC/cmake-build-debug/CMakeFiles/managedc-test.dir

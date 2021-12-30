@@ -4,25 +4,14 @@
 
 #include <stdio.h>
 
+//#define MC_NO_INLINE
+//#define MC_NO_MSTRING
 #include "managed.h"
 
-struct test_struct {
-    int id;
-    void *alloc;
-};
-
-void deallocate_test_struct(void *ptr)
-{
-    struct test_struct *s = (struct test_struct *)ptr;
-
-    free(s->alloc);
-}
 
 int main(void)
 {
-    managed struct test_struct *obj = new(struct test_struct, 1, deallocate_test_struct);
-
-    obj->id = 1;
-    obj->alloc = malloc(10);
-    
+    managed int *array = new(int, 100);
+    //use array
+    //Automatically deallocated!
 }

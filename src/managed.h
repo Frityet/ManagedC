@@ -1,4 +1,5 @@
 /**
+ *
  * @file    managed.h
  * @author  Amrit Bhogal (ambhogal01@gmail.com)
  * @brief   Management for allocated pointers, just use the `new(type)` macro and mark your pointer as `managed`
@@ -32,9 +33,17 @@ extern int errno;
 #endif
 
 #ifdef MC_NO_INLINE
+    #undef MC_FORCE_INLINE
     #define MC_FORCE_INLINE
 #endif
 
+#ifndef mstring
+    #define mstring managed char *
+#endif
+
+#ifdef MC_NO_MSTRING
+    #undef mstring
+#endif
 /**
  * @brief Allows for a pointer allocated with managed_alloc be deallocated at the end of the scope
  */
@@ -56,7 +65,7 @@ extern int errno;
 
 struct managed_pointer {
     void    (*free)(void *);
-    size_t  total_size, type_size, count;
+    size_t  usable_size, type_size, count, total_size;
     void    *data;
 };
 
@@ -69,14 +78,14 @@ MC_FORCE_INLINE struct managed_pointer *metadataof(void *ptr)
     return mptr;
 }
 
-MC_FORCE_INLINE size_t managed_countof(void *ptr)
+MC_FORCE_INLINE size_t countof(void *ptr)
 {
     return metadataof(ptr)->count;
 }
 
 MC_FORCE_INLINE size_t managed_sizeof(void *ptr)
 {
-    return metadataof(ptr)->total_size;
+    return metadataof(ptr)->usable_size;
 }
 
 void *managed_alloc(size_t type_size, size_t count, void (*free)(void *))
@@ -87,11 +96,12 @@ void *managed_alloc(size_t type_size, size_t count, void (*free)(void *))
     if (mptr == NULL)
         return NULL;
 
-    mptr->total_size    = full_size;
+    mptr->usable_size   = full_size;
     mptr->count         = count;
     mptr->type_size     = type_size;
     mptr->free          = free;
     mptr->data          = mptr + 1;
+    mptr->total_size    = full_size  + sizeof(struct managed_pointer);
 
     return mptr->data;
 }
@@ -108,33 +118,75 @@ void free_managed_alloc(void *ptr)
 
     if (mptr->free != NULL)
         mptr->free(realptr);
+//    printf("FREEING %zu BYTES! (typesize of %zu * count of %zu)\n", mptr->usable_size, mptr->type_size, mptr->count);
     free(mptr);
 }
 
-void *increase_managed_alloc_count(void *alloc, size_t count_to_add)
+void *grow_managed_alloc(void *alloc, size_t count_to_add)
 {
     struct managed_pointer *mptr = metadataof(alloc);
+    void *newalloc = managed_alloc(mptr->type_size, mptr->count + count_to_add, mptr->free);
+    if (newalloc == NULL)
+        return NULL;
+
+    void *result = memcpy(newalloc, alloc, mptr->usable_size);
+    (void)result;
+//    int i;
+//    if ((i = memcmp(result, newalloc, mptr->usable_size)) < (int)mptr->usable_size) {
+//        fprintf(stderr, "You did this wrong: %d\n", i);
+//        return NULL;
+//    }
+
+    return newalloc;
 }
 
 MC_FORCE_INLINE char *mstr(const char *str)
 {
-    size_t len = strlen(str);
+    size_t len = strlen(str) + 1;
     char *mstr = new(char, len);
-    strncpy(mstr, str, len);
+    memcpy(mstr, str, len);
+    mstr[len] = '\0';
     return mstr;
 }
 
 MC_FORCE_INLINE char *mstrcpy(char *mstr)
 {
-    size_t len = managed_countof(mstr);
+    size_t len = countof(mstr) + 1;
     char *newstr = new(char, len);
-    strncpy(newstr, mstr, len);
+    memcpy(newstr, mstr, len);
+    newstr[len] = '\0';
     return newstr;
 }
 
 MC_FORCE_INLINE char *mstrcat(char *str1, char *str2)
 {
+    struct managed_pointer  *str1mdata = metadataof(str1),
+                            *str2mdata = metadataof(str2);
 
+    char *newstr = NULL;
+    size_t str1_len, str2_len;
+    if (str1mdata == NULL && str2mdata == NULL) {
+        str1_len = strlen(str1);
+        str2_len = strlen(str2);
+        newstr = new(char, str1_len + str2_len);
+    } else if (str1mdata == NULL) {
+        str1_len = strlen(str1);
+        str2_len = str2mdata->count;
+        newstr = new(char, str1_len + str2_len);
+    } else if (str2mdata == NULL) {
+        str1_len = str1mdata->count;
+        str2_len = strlen(str2);
+        newstr = new(char, str1_len + str2_len);
+    } else /*Both are managed*/ {
+        str1_len = str1mdata->count;
+        str2_len = str2mdata->count;
+        newstr = new(char, str1_len + str2_len);
+    }
+
+    strncat(newstr, str1, str1_len);
+    strncat(newstr, str2, str2_len);
+
+    return newstr;
 }
 
 //#undef MC_ATTRIBUTE

@@ -1,0 +1,4 @@
+/home/frityet/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/212.5457.51/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_DEPENDS_USE_COMPILER=FALSE -G "CodeBlocks - Unix Makefiles" /home/frityet/Documents/ManagedC
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/frityet/Documents/ManagedC/cmake-build-debug

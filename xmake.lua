@@ -2,7 +2,7 @@ add_rules("mode.debug", "mode.release")
 
 target("managedc-test")
     set_kind("binary")
-    add_cflags("-Wall", "-Wextra", "-Werror")
+--     add_cflags("-Wall", "-Wextra", "-Werror")
     add_files("src/test.c")
     add_headerfiles("src/managed.h")
     add_includedirs("src/")

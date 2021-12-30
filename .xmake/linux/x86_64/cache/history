@@ -1,0 +1,5 @@
+{
+    cmdlines = {
+        "xmake project -k cmakelists"
+    }
+}

@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/frityet/Documents/ManagedC/src/managed.h
+stdlib.h
+-
+stdint.h
+-
+errno.h
+-
+string.h
+-
+
+/home/frityet/Documents/ManagedC/src/test.c
+stdio.h
+-
+managed.h
+/home/frityet/Documents/ManagedC/src/managed.h
+
