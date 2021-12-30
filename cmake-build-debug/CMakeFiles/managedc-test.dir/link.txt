@@ -1,1 +1,0 @@
-/usr/bin/cc -g -m64 CMakeFiles/managedc-test.dir/src/test.c.o -o build/linux/x86_64/release/managedc-test 
