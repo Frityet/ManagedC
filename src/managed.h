@@ -20,7 +20,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
-extern errno_t errno;
+extern int errno;
+#include <string.h>
 
 #ifndef MC_ATTRIBUTE
     #define MC_ATTRIBUTE(_name) __attribute__((_name))
@@ -28,6 +29,10 @@ extern errno_t errno;
 
 #ifndef MC_FORCE_INLINE
     #define MC_FORCE_INLINE MC_ATTRIBUTE(always_inline) static inline
+#endif
+
+#ifdef MC_NO_INLINE
+    #define MC_FORCE_INLINE
 #endif
 
 /**
@@ -57,7 +62,19 @@ struct managed_pointer {
 
 MC_FORCE_INLINE struct managed_pointer *metadataof(void *ptr)
 {
-    return ptr - sizeof(struct managed_pointer);
+//    if
+//
+//    return ;
+}
+
+MC_FORCE_INLINE size_t managed_countof(void *ptr)
+{
+    return metadataof(ptr)->count;
+}
+
+MC_FORCE_INLINE size_t managed_sizeof(void *ptr)
+{
+    return metadataof(ptr)->total_size;
 }
 
 void *managed_alloc(size_t type_size, size_t count, void (*free)(void *))
@@ -90,6 +107,27 @@ void free_managed_alloc(void *ptr)
     if (mptr->free != NULL)
         mptr->free(realptr);
     free(mptr);
+}
+
+MC_FORCE_INLINE char *mstr(const char *str)
+{
+    size_t len = strlen(str);
+    char *mstr = new(char, len);
+    strncpy(mstr, str, len);
+    return mstr;
+}
+
+MC_FORCE_INLINE char *mstrcpy(char *mstr)
+{
+    size_t len = managed_countof(mstr);
+    char *newstr = new(char, len);
+    strncpy(newstr, mstr, len);
+    return newstr;
+}
+
+MC_FORCE_INLINE char *mstrcat(char *str1, char *str2)
+{
+
 }
 
 //#undef MC_ATTRIBUTE
