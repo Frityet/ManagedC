@@ -62,9 +62,11 @@ struct managed_pointer {
 
 MC_FORCE_INLINE struct managed_pointer *metadataof(void *ptr)
 {
-//    if
-//
-//    return ;
+    struct managed_pointer *mptr = ptr - sizeof(struct managed_pointer);
+    if (mptr->data != ptr) {
+        return NULL;
+    }
+    return mptr;
 }
 
 MC_FORCE_INLINE size_t managed_countof(void *ptr)
@@ -107,6 +109,11 @@ void free_managed_alloc(void *ptr)
     if (mptr->free != NULL)
         mptr->free(realptr);
     free(mptr);
+}
+
+void *increase_managed_alloc_count(void *alloc, size_t count_to_add)
+{
+    struct managed_pointer *mptr = metadataof(alloc);
 }
 
 MC_FORCE_INLINE char *mstr(const char *str)
