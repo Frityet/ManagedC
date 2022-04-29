@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch",
+            "program": "${workspaceRoot}/build/macosx/x86_64/debug/Test",
+            "args": [
+                "arg1", "arg2", "arg3", "arg4"
+            ],
+            "cwd": "${workspaceRoot}/build/macosx/x86_64/debug/",
+            "console": "internalConsole",
+            "preLaunchTask": "Build"
+        }
+
+    ]
+}

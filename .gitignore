@@ -4,4 +4,8 @@ build/
 cmake-build-debug/
 CMakeLists.txt
 
+compile_commands.json
+
 .idea/
+
+.cache/
