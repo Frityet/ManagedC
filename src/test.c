@@ -4,14 +4,25 @@
 
 #include <stdio.h>
 
-//#define MC_NO_INLINE
-//#define MC_NO_MSTRING
-#include "managed.h"
+#include "mstring.h"
 
-
-int main(void)
+void print_array(string strs[])
 {
-    managed int *array = new(int, 100);
-    //use array
-    //Automatically deallocated!
+    for (int i = 0; i < lengthof(strs); i++) {
+        let auto str = ref(strs[i]);
+        puts(strs[i]);
+    }
+}
+
+int main(int argc, string argv[])
+{
+    auto var args = new(string, argc, free_managed);
+
+    for (int i = 0; i < argc; i++) {
+        args[i] = mstr(argv[i]);
+    }
+
+    for (int i = 0; i < lengthof(args); i++) {
+        puts(args[i]);
+    }
 }

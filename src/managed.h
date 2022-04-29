@@ -1,195 +1,134 @@
-/**
- *
- * @file    managed.h
- * @author  Amrit Bhogal (ambhogal01@gmail.com)
- * @brief   Management for allocated pointers, just use the `new(type)` macro and mark your pointer as `managed`
- * @version 1.0
- * @date    2021-12-29
- *
- */
-#ifndef MANAGED_C_HEADER_
-#define MANAGED_C_HEADER_
-
-#ifdef __cplusplus
-    #error Use std::shared_ptr
-#endif
-
-#ifdef _MSC_VER
-    #error MSVC does not support __attribute__((cleanup))
-#endif
-
+#pragma once
 #include <stdlib.h>
-#include <stdint.h>
-#include <errno.h>
-extern int errno;
-#include <string.h>
 
-#ifndef MC_ATTRIBUTE
-    #define MC_ATTRIBUTE(_name) __attribute__((_name))
-#endif
+#pragma clang assume_nonnull begin
 
-#ifndef MC_FORCE_INLINE
-    #define MC_FORCE_INLINE MC_ATTRIBUTE(always_inline) static inline
-#endif
+#define ATTRIBUTE(...) __attribute__((__VA_ARGS__))
 
-#ifdef MC_NO_INLINE
-    #undef MC_FORCE_INLINE
-    #define MC_FORCE_INLINE
-#endif
+#define auto ATTRIBUTE(cleanup(free_managed))
 
-#ifndef mstring
-    #define mstring managed char *
-#endif
+#define var __auto_type
+#define let const var
 
-#ifdef MC_NO_MSTRING
-    #undef mstring
-#endif
-/**
- * @brief Allows for a pointer allocated with managed_alloc be deallocated at the end of the scope
- */
-#define managed MC_ATTRIBUTE(cleanup(free_managed_alloc))
+#define nullable        _Nullable
+#define nonnull         _Nonnull
+#define null_unspec    _Null_unspecified
 
-//May god forgive me for this
-#define _NEW_1(type, ...)                                           managed_alloc(sizeof(type), 1, NULL)
-#define _NEW_2(type, count)                                         managed_alloc(sizeof(type), count, NULL)
-#define _NEW_3(type, count, dtor)                                   managed_alloc(sizeof(type), count, dtor)
-#define _NEW_REDIRECTOR(n, type, dtor_or_count, func, FUNC, ...)    FUNC
+#define overloadable ATTRIBUTE(overloadable)
 
-/**
- * @brief           Allocates a managed pointer
- * @param type      Type to allocate
- * @param count     Number of entries to allocate
- * @param dtor      Deconstructor to use for the allocation
- */
-#define new(...) _NEW_REDIRECTOR(, ##__VA_ARGS__, _NEW_3(__VA_ARGS__), _NEW_2(__VA_ARGS__), _NEW_1(__VA_ARGS__))
+#define new(type, ...) (type *)managed_alloc(sizeof(type) __VA_OPT__(,) __VA_ARGS__)
+#define ref(obj) (typeof(obj))reference(obj)
 
-struct managed_pointer {
-    void    (*free)(void *);
-    size_t  usable_size, type_size, count, total_size;
-    void    *data;
+#define USED_MOTHERFUCKER ATTRIBUTE(used)
+
+typedef void FreePointer_f(const void *nonnull);
+
+struct PointerMetadata {
+    unsigned int    total_size, count, typesize, reference_count;
+    FreePointer_f   *nullable on_free;
+    void            *nonnull data;
 };
 
-MC_FORCE_INLINE struct managed_pointer *metadataof(void *ptr)
+static inline struct PointerMetadata *nullable metadataof(void *nonnull ptr)
 {
-    struct managed_pointer *mptr = ptr - sizeof(struct managed_pointer);
-    if (mptr->data != ptr) {
+    let mdata = (struct PointerMetadata *)(ptr - sizeof(struct PointerMetadata));
+
+    return mdata->data == ptr ? mdata : NULL;
+}
+
+static inline int lengthof(void *nonnull ptr)
+{
+    let mdata = metadataof(ptr);
+    if (mdata == NULL)
+        return 0;
+    return (int)mdata->count;
+}
+
+static inline void *nullable reference(void *nonnull ptr)
+{
+    var mdata = metadataof(ptr);
+    if (mdata == NULL)
         return NULL;
-    }
-    return mptr;
+    mdata->reference_count++;
+    return mdata->data;
 }
 
-MC_FORCE_INLINE size_t countof(void *ptr)
+//overloadable static inline void free_managed(...) {}
+
+ATTRIBUTE(used)
+//overloadable
+static inline void free_managed(const void *nonnull ref)
 {
-    return metadataof(ptr)->count;
-}
+    void *ptr = *((void **)ref);
+    var mdata = metadataof(ptr);
+    mdata->reference_count--;
 
-MC_FORCE_INLINE size_t managed_sizeof(void *ptr)
-{
-    return metadataof(ptr)->usable_size;
-}
-
-void *managed_alloc(size_t type_size, size_t count, void (*free)(void *))
-{
-    size_t full_size = type_size * count;
-
-    struct managed_pointer *mptr = malloc(full_size + sizeof(struct managed_pointer));
-    if (mptr == NULL)
-        return NULL;
-
-    mptr->usable_size   = full_size;
-    mptr->count         = count;
-    mptr->type_size     = type_size;
-    mptr->free          = free;
-    mptr->data          = mptr + 1;
-    mptr->total_size    = full_size  + sizeof(struct managed_pointer);
-
-    return mptr->data;
-}
-
-void free_managed_alloc(void *ptr)
-{
-    void *realptr = *(void **)ptr;
-    struct managed_pointer *mptr = metadataof(realptr);
-
-    if (mptr->data != realptr) {
-        errno = 1;
+    if (mdata->reference_count > 0)
         return;
-    }
 
-    if (mptr->free != NULL)
-        mptr->free(realptr);
-//    printf("FREEING %zu BYTES! (typesize of %zu * count of %zu)\n", mptr->usable_size, mptr->type_size, mptr->count);
-    free(mptr);
+    if (mdata->on_free != NULL) {
+        for (unsigned int i = 0; i < mdata->count; i++) {
+            mdata->on_free(ptr + (mdata->typesize * i));
+        }
+    }
+    free(mdata);
 }
 
-void *grow_managed_alloc(void *alloc, size_t count_to_add)
+overloadable static inline void *nullable managed_alloc(unsigned int size, unsigned int count, FreePointer_f *nullable on_free)
 {
-    struct managed_pointer *mptr = metadataof(alloc);
-    void *newalloc = managed_alloc(mptr->type_size, mptr->count + count_to_add, mptr->free);
-    if (newalloc == NULL)
+    let total_size = count * size;
+
+    struct PointerMetadata *ptr = calloc(1, sizeof(struct PointerMetadata) + total_size);
+    if (ptr == NULL) {
+//        LOG_ERROR("Could not alloc pointer with size %d (%d * %d)!", total_size, size, count);
         return NULL;
-
-    void *result = memcpy(newalloc, alloc, mptr->usable_size);
-    (void)result;
-//    int i;
-//    if ((i = memcmp(result, newalloc, mptr->usable_size)) < (int)mptr->usable_size) {
-//        fprintf(stderr, "You did this wrong: %d\n", i);
-//        return NULL;
-//    }
-
-    return newalloc;
-}
-
-MC_FORCE_INLINE char *mstr(const char *str)
-{
-    size_t len = strlen(str) + 1;
-    char *mstr = new(char, len);
-    memcpy(mstr, str, len);
-    mstr[len] = '\0';
-    return mstr;
-}
-
-MC_FORCE_INLINE char *mstrcpy(char *mstr)
-{
-    size_t len = countof(mstr) + 1;
-    char *newstr = new(char, len);
-    memcpy(newstr, mstr, len);
-    newstr[len] = '\0';
-    return newstr;
-}
-
-MC_FORCE_INLINE char *mstrcat(char *str1, char *str2)
-{
-    struct managed_pointer  *str1mdata = metadataof(str1),
-                            *str2mdata = metadataof(str2);
-
-    char *newstr = NULL;
-    size_t str1_len, str2_len;
-    if (str1mdata == NULL && str2mdata == NULL) {
-        str1_len = strlen(str1);
-        str2_len = strlen(str2);
-        newstr = new(char, str1_len + str2_len);
-    } else if (str1mdata == NULL) {
-        str1_len = strlen(str1);
-        str2_len = str2mdata->count;
-        newstr = new(char, str1_len + str2_len);
-    } else if (str2mdata == NULL) {
-        str1_len = str1mdata->count;
-        str2_len = strlen(str2);
-        newstr = new(char, str1_len + str2_len);
-    } else /*Both are managed*/ {
-        str1_len = str1mdata->count;
-        str2_len = str2mdata->count;
-        newstr = new(char, str1_len + str2_len);
     }
 
-    strncat(newstr, str1, str1_len);
-    strncat(newstr, str2, str2_len);
+    ptr->count = count;
+    ptr->typesize = size;
+    ptr->total_size = total_size;
+    ptr->on_free = on_free;
+    ptr->reference_count++;
+    ptr->data = ptr + 1;
 
-    return newstr;
+    return ptr->data;
 }
 
-//#undef MC_ATTRIBUTE
-#undef MC_FORCE_INLINE
+USED_MOTHERFUCKER
+overloadable static inline void *nullable managed_alloc(unsigned int size, unsigned int count)
+{
+    return managed_alloc(count, size, NULL);
+}
 
-#endif //MANAGED_C_HEADER_
+USED_MOTHERFUCKER
+overloadable static inline void *nullable managed_alloc(unsigned int size, FreePointer_f *nullable on_free)
+{
+    return managed_alloc(1, size, on_free);
+}
+
+USED_MOTHERFUCKER
+overloadable static inline void *nullable managed_alloc(unsigned int size)
+{
+    return managed_alloc(1, size, NULL);
+}
+
+ATTRIBUTE(warn_unused_result("Use the return value, fucker"), used)
+static inline void *nullable realloc_managed(void *nonnull ptr, unsigned int count)
+{
+    var mdata = metadataof(ptr);
+    let size     = mdata->typesize,
+        newsize  = size * count;
+
+    struct PointerMetadata *newptr = realloc(mdata, sizeof(struct PointerMetadata) + newsize);
+    if (newptr == NULL) {
+//        LOG_ERROR("Could not realloc pointer at %p with size %d (%d * %d)!", ptr, newsize, size, count);
+        return NULL;
+    }
+
+    newptr->count   = count;
+    newptr->data    = newptr + 1;
+
+    return newptr->data;
+}
+
+#pragma clang assume_nonnull end
