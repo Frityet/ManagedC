@@ -75,5 +75,3 @@ overloadable static inline string mstrcpy(string dst, string src)
 
     return mstrcpy(dst, src, src_mdata == NULL ? strlen(src) : src_mdata->count);
 }
-
-

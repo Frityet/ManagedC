@@ -98,14 +98,5 @@ static void logbase(enum LogType logtype, const char *msg, int line, const char 
                                 logbase(LOG_TYPE_FATAL, _LOG_buf, __LINE__, __FILE__, __PRETTY_FUNCTION__);\
                             })
 
-#define EVAL(x) x 
-#define STRMAC(x) EVAL(#x)
-
-#define LOG_ASSERT(expr, suc, err, ...) ({\
-                                extern void exit(int);\
-                                if (expr) LOG_SUCCESS("{Expression \"" STRMAC(expr) "\" succeeded!}");\
-                                else { LOG_FATAL("{Expression \"" STRMAC(expr) " failed!} %s", err __VA_OPT__(,) __VA_ARGS__); exit(EXIT_FAILURE); }\
-                            })
-
 // #undef EVAL
 // #undef STRMAC               

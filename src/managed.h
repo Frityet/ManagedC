@@ -3,12 +3,23 @@
 
 #pragma clang assume_nonnull begin
 
+#ifdef Bool
+#undef Bool
+#endif
+
+#ifdef bool
+#undef bool
+#undef true
+#undef false
+#endif
+typedef enum Bool: _Bool { true = (_Bool)1, false = (_Bool)0 } bool;
+
+
 #define ATTRIBUTE(...) __attribute__((__VA_ARGS__))
 
-#define auto ATTRIBUTE(cleanup(free_managed))
-
-#define var __auto_type
-#define let const var
+#define auto    ATTRIBUTE(cleanup(free_managed))
+#define var     __auto_type
+#define let     const var
 
 #define nullable        _Nullable
 #define nonnull         _Nonnull
@@ -18,6 +29,9 @@
 
 #define new(type, ...) (type *)managed_alloc(sizeof(type) __VA_OPT__(,) __VA_ARGS__)
 #define ref(obj) (typeof(obj))reference(obj)
+#define release(ptr) free_managed(&ptr)
+
+#define DECONSTRUCTOR(type) static inline void type##_free(type *ptr)
 
 #define USED_MOTHERFUCKER ATTRIBUTE(used)
 
@@ -98,6 +112,12 @@ USED_MOTHERFUCKER
 overloadable static inline void *nullable managed_alloc(unsigned int size, unsigned int count)
 {
     return managed_alloc(count, size, NULL);
+}
+
+USED_MOTHERFUCKER
+overloadable static inline void *nullable managed_alloc(unsigned int size, void *on_free)
+{
+    return managed_alloc(size, 1, (FreePointer_f *nullable)on_free);
 }
 
 USED_MOTHERFUCKER

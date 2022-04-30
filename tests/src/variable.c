@@ -9,16 +9,14 @@
 extern int errno;
 
 #include "managed.h"
-#include "logger.h"
+#include "test.h"
 
-int main()
+TEST(variable)
 {
-    LOG_SUCCESS("Started!");
-
     auto var num = new(int);
-    LOG_ASSERT(num != NULL, "Successfully allocated!", "Could not allocate! Reason: %s", strerror(errno));
-
+    TEST_EXPR(num != NULL, "Could not allocate! Reason: %s", strerror(errno));
     *num = 4;
+    TEST_EXPR(*num == 4, "Could not set value!");
 
-    LOG_SUCCESS("Done!");
+    return true;
 }
