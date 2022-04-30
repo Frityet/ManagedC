@@ -1,6 +1,9 @@
-#include "test.h"
+/**
+ * @file list.c
+ * @brief Tests allocation and reallocation (growing) of a list of integers.
+ */
 
-#include <assert.h>
+#include "test.h"
 
 TEST(list)
 {

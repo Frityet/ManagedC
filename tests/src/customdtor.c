@@ -1,3 +1,8 @@
+/**
+ * @file customdtor.c
+ * @brief Tests a custom deconstructor for a managed type.
+ */
+
 #include "test.h"
 
 struct MyStruct {

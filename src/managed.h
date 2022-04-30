@@ -1,5 +1,10 @@
+
+
 /**
- *                   GNU LESSER GENERAL PUBLIC LICENSE
+ * @file managed.h
+ * @brief Implements a garbage collector for pointers.
+ * @paragraph LICENCE:
+ *                    GNU LESSER GENERAL PUBLIC LICENSE
                        Version 2.1, February 1999
 
  Copyright (C) 1991, 1999 Free Software Foundation, Inc.
@@ -472,7 +477,6 @@ convey the exclusion of warranty; and each file should have at least the
 "copyright" line and a pointer to where the full notice is found.
 
     <one line to give the library's name and a brief idea of what it does.>
-    Copyright (C) 2022 - Frityet (Amrit Bhogal)
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -522,6 +526,7 @@ That's all there is to it!
 #endif
 
 #if !defined(MC_NO_BOOLS)
+
 //libX11 decides to be a lil bitch and define every symbol (including types and macros) in PascalCase. This results in
 //some random ass macros being defined, such as Bool.
 #   if defined (Bool)
@@ -567,16 +572,6 @@ That's all there is to it!
 #   define nonnull
 #   define null_unspec
 #endif
-
-//#if !defined(new) || defined(MC_NO_NEW)
-///**
-// * @brief Wrapper around the "managed_alloc" function that makes it's syntax better.
-// * @param type Type of the allocation
-// * @param ... Additional arguments for managed_alloc
-// * @refitem managed_alloc
-// */
-//#   define new(type, ...) (type *)managed_alloc(sizeof(type) __VA_OPT__(,) __VA_ARGS__)
-//#endif
 
 #if !defined(ref) || defined(MC_NO_REF)
 /**
@@ -633,9 +628,12 @@ struct MC_ADD_PREFIX(PointerMetadata) {
  */
 static inline struct MC_ADD_PREFIX(PointerMetadata) *nullable MC_ADD_PREFIX(metadataof)(void *nonnull ptr)
 {
+    if (ptr == NULL) return NULL;
     //Offsets the pointer by the size of the metadata, making the new address point right at the start of the metadata
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = (struct MC_ADD_PREFIX(PointerMetadata) *)(ptr - sizeof(struct MC_ADD_PREFIX(PointerMetadata)));
 
+    //High chance of causing a segmentation fault, especially if `mdata` is NULL.
+    //Too bad I don't care!
     return mdata->data == ptr ? mdata : NULL;
 }
 
@@ -784,7 +782,7 @@ static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, u
         return NULL;
     }
 
-    //The rest of the fields are copied by `realloc`
+    //The rest of the fields are copied by `realloc`.
     newptr->count   = count;
     newptr->data    = newptr + 1;
 

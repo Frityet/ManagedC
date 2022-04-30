@@ -1,3 +1,8 @@
+/**
+ * @file ptrlist.c
+ * @brief Tests the allocation and deallocation of a list of managed pointers.
+ */
+
 #include "test.h"
 
 TEST(ptrlist)

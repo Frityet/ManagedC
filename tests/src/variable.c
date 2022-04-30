@@ -1,6 +1,7 @@
-//
-// Created by Frityet on 2021-12-23.
-//
+/**
+ * @file variable.c
+ * @brief Tests a basic allocation and deallocation.
+ */
 
 #include <stdio.h>
 #include <string.h>

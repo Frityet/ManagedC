@@ -1,3 +1,8 @@
+/**
+ * @file logger.h
+ * @brief Implements a simple logger with coloured output.
+ */
+
 #pragma once
 
 #include <stdio.h>

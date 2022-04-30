@@ -1,6 +1,9 @@
-#include "test.h"
+/**
+ * @file refcount.c
+ * @brief Tests reference counting and deallocation
+ */
 
-// #include "mstring.h"
+#include "test.h"
 
 struct CustomStruct {
     char *str;

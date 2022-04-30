@@ -1,3 +1,8 @@
+/**
+ * @file main.c
+ * @brief Entry point for testing the library.
+ */
+
 #include "test.h"
 
 int main()
