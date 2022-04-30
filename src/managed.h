@@ -1,73 +1,105 @@
 #pragma once
 #include <stdlib.h>
 
-#pragma clang assume_nonnull begin
+#if defined(__clang__)
+#   pragma clang assume_nonnull begin
+#endif
 
+#if !defined(EVAL)
+#   define EVAL(x) x
+#endif
+
+#if !defined(CONCAT)
+#   define X_CONCAT(x, y) x##y
+#   define CONCAT(x, y) X_CONCAT(x, y)
+#endif
+
+#if !defined(MC_NO_BOOLS)
 //libX11 decides to be a lil bitch and define every symbol (including types and macros) in PascalCase. This results in
 //some random ass macros being defined, such as Bool.
-#ifdef Bool
-#undef Bool
+#   if defined (Bool)
+#       undef Bool
+#   endif
+
+#   if defined (bool)
+#       undef bool
+#       undef true
+#       undef false
+#   endif
+
+    /**
+     * @brief C11 Bools suck massive balls, so this is competent.
+     */
+    typedef enum Bool: _Bool { true = (_Bool)1, false = (_Bool)0 } bool;
+#else
+#   include <stdbool.h>
 #endif
 
+#if (defined(var))
+#   pragma push_macro("var")
+#endif
+#define var     __auto_type
 
+#if (defined(let))
+#   pragma push_macro("let")
+#endif
+#define let     const var
 
-#ifdef bool
-#undef bool
-#undef true
-#undef false
+#if !defined(MC_PREFIX)
+#   define MC_PREFIX mc_
 #endif
 
-/**
- * @brief C11 Bools suck massive balls, so this is competent.
- */
-typedef enum Bool: _Bool { true = (_Bool)1, false = (_Bool)0 } bool;
-
+#if defined(PREFIX)
+#   pragma push_macro("PREFIX")
+#endif
+#define PREFIX(x) CONCAT(MC_PREFIX, x)
 
 #define ATTRIBUTE(...) __attribute__((__VA_ARGS__))
 
+#if defined(auto)
+#   pragma push_macro("auto")
+#endif
 /**
- *  @breif Automatically calls free_managed at the end of the scope.
+ *  @brief Automatically calls free_managed at the end of the scope.
  */
 #define auto    ATTRIBUTE(cleanup(free_managed))
-#define var     __auto_type
-#define let     const var
 
-#define nullable        _Nullable
-#define nonnull         _Nonnull
-#define null_unspec    _Null_unspecified
+#if !defined(MC_NO_NULLABLE) && defined(__clang__)
+#   define nullable        _Nullable
+#   define nonnull         _Nonnull
+#   define null_unspec    _Null_unspecified
+#else
+#   define nullable
+#   define nonnull
+#   define null_unspec
+#endif
 
-/**
- * @brief Allows for C++ style function overloading.
- * @warning TODO: Clang specific, replace ASAP.
- */
-#define overloadable ATTRIBUTE(overloadable)
+//#if !defined(new) || defined(MC_NO_NEW)
+///**
+// * @brief Wrapper around the "managed_alloc" function that makes it's syntax better.
+// * @param type Type of the allocation
+// * @param ... Additional arguments for managed_alloc
+// * @refitem managed_alloc
+// */
+//#   define new(type, ...) (type *)managed_alloc(sizeof(type) __VA_OPT__(,) __VA_ARGS__)
+//#endif
 
-/**
- * @brief Wrapper around the "managed_alloc" function that makes it's syntax better.
- * @refitem managed_alloc
- */
-#define new(type, ...) (type *)managed_alloc(sizeof(type) __VA_OPT__(,) __VA_ARGS__)
-
+#if !defined(ref) || defined(MC_NO_REF)
 /**
  * @brief Gets a reference to a managed pointer, incrementing the pointer's reference count by 1.
  */
-#define ref(obj) (typeof(obj))reference(obj)
-
-/**
- * @brief FUCK YOU CLANG, MY FUNCTION IS USED YOU FUCKING IDIOT, DONT FUCKING ERROR ME OUT FOR YOUR IDOCITY.
- */
-#define USED_MOTHERFUCKER ATTRIBUTE(used)
-#define debug USED_MOTHERFUCKER let
+#   define ref(obj) (typeof(obj))reference(obj)
+#endif
 
 /**
  * @brief Callback type for freeing a managed pointer.
  */
-typedef void FreePointer_f(const void *nonnull);
+typedef void PREFIX(FreePointer_f)(const void *nonnull);
 
 /**
  * @brief Metadata about a managed pointer.
  */
-struct PointerMetadata {
+struct PREFIX(PointerMetadata) {
     /**
      * @brief Total size of the allocated data (without the size of the metadata).
      */
@@ -91,7 +123,7 @@ struct PointerMetadata {
     /**
      * @brief Callback to be executed on each element in the data pointer.
      */
-    FreePointer_f   *nullable on_free;
+    PREFIX(FreePointer_f)   *nullable on_free;
 
     /**
      * @brief Pointer to the allocated data.
@@ -102,12 +134,12 @@ struct PointerMetadata {
 /**
  * @brief Gets the metadata of a managed pointer.
  * @param ptr Managed pointer
- * @return struct PointerMetadata
+ * @return struct PREFIX(PointerMetadata)
  * @refitem Metadata of the pointer.
  */
-static inline struct PointerMetadata *nullable metadataof(void *nonnull ptr)
+static inline struct PREFIX(PointerMetadata) *nullable PREFIX(metadataof)(void *nonnull ptr)
 {
-    let mdata = (struct PointerMetadata *)(ptr - sizeof(struct PointerMetadata));
+    let mdata = (struct PREFIX(PointerMetadata) *)(ptr - sizeof(struct PREFIX(PointerMetadata)));
 
     return mdata->data == ptr ? mdata : NULL;
 }
@@ -117,9 +149,9 @@ static inline struct PointerMetadata *nullable metadataof(void *nonnull ptr)
  * @param ptr Managed pointer
  * @return Count of items in the pointer.
  */
-static inline int countof(void *nonnull ptr)
+static inline int PREFIX(countof)(void *nonnull ptr)
 {
-    let mdata = metadataof(ptr);
+    let mdata = PREFIX(metadataof)(ptr);
     if (mdata == NULL)
         return 0;
     return (int)mdata->count;
@@ -130,9 +162,9 @@ static inline int countof(void *nonnull ptr)
  * @param ptr Managed pointer.
  * @return ptr
  */
-static inline void *nullable reference(void *nonnull ptr)
+static inline void *nullable PREFIX(reference)(void *nonnull ptr)
 {
-    var mdata = metadataof(ptr);
+    var mdata = PREFIX(metadataof)(ptr);
     if (mdata == NULL)
         return NULL;
     mdata->reference_count++;
@@ -143,11 +175,11 @@ static inline void *nullable reference(void *nonnull ptr)
  * @brief Frees a managed pointer.
  * @param ref Pointer to the managed pointer (double pointer).
  */
-USED_MOTHERFUCKER
-static inline void free_managed(const void *nonnull ref)
+
+static inline void PREFIX(free_managed)(const void *nonnull ref)
 {
     void *ptr = *((void **)ref);
-    var mdata = metadataof(ptr);
+    var mdata = PREFIX(metadataof)(ptr);
 
     mdata->reference_count--;
 
@@ -166,9 +198,10 @@ static inline void free_managed(const void *nonnull ref)
  * @brief Releases the resources behind a managed pointer.
  * @param ref Managed pointer
  */
-USED_MOTHERFUCKER
-static inline void release(const void *nonnull ref)
-{ free_managed(&ref); }
+
+static inline void PREFIX(release)(const void *nonnull ref)
+{ PREFIX(free_managed)(&ref); }
+
 
 /**
  * @brief Allocates a managed pointer.
@@ -177,11 +210,12 @@ static inline void release(const void *nonnull ref)
  * @param on_free Callback to be executed on free.
  * @return Managed pointer, or @c NULL if unable to allocate.
  */
-overloadable static inline void *nullable managed_alloc(unsigned int size, unsigned int count, FreePointer_f *nullable on_free)
+ATTRIBUTE(warn_unused_result("This function returns a new allocated pointer on success, you must use the return value!"))
+static inline void *nullable PREFIX(managed_alloc)(unsigned int size, unsigned int count, PREFIX(FreePointer_f) *nullable on_free)
 {
     let total_size = count * size;
 
-    struct PointerMetadata *ptr = calloc(1, sizeof(struct PointerMetadata) + total_size);
+    struct PREFIX(PointerMetadata) *ptr = calloc(1, sizeof(struct PREFIX(PointerMetadata)) + total_size);
     if (ptr == NULL) {
 //        LOG_ERROR("Could not alloc pointer with size %d (%d * %d)!", total_size, size, count);
         return NULL;
@@ -197,32 +231,34 @@ overloadable static inline void *nullable managed_alloc(unsigned int size, unsig
     return ptr->data;
 }
 
-/**
- * @copydoc managed_alloc(unsigned int, unsigned int, FreePointer_f *nullable)
- */
-USED_MOTHERFUCKER
-overloadable static inline void *nullable managed_alloc(unsigned int size, unsigned int count)
-{
-    return managed_alloc(size, count, NULL);
-}
-
-/**
- * @copydoc managed_alloc(unsigned int, unsigned int, FreePointer_f *nullable)
- */
-USED_MOTHERFUCKER
-overloadable static inline void *nullable managed_alloc(unsigned int size, FreePointer_f *nullable on_free)
-{
-    return managed_alloc(size, 1, on_free);
-}
-
-/**
- * @copydoc managed_alloc(unsigned int, unsigned int, FreePointer_f *nullable)
- */
-USED_MOTHERFUCKER
-overloadable static inline void *nullable managed_alloc(unsigned int size)
-{
-    return managed_alloc(size, 1, NULL);
-}
+#pragma region Clang specific
+///**
+// * @copydoc managed_alloc(unsigned int, unsigned int, FreePointer_f *nullable)
+// */
+//
+//overloadable static inline void *nullable managed_alloc(unsigned int size, unsigned int count)
+//{
+//    return managed_alloc(size, count, NULL);
+//}
+//
+///**
+// * @copydoc managed_alloc(unsigned int, unsigned int, FreePointer_f *nullable)
+// */
+//
+//overloadable static inline void *nullable managed_alloc(unsigned int size, FreePointer_f *nullable on_free)
+//{
+//    return managed_alloc(size, 1, on_free);
+//}
+//
+///**
+// * @copydoc managed_alloc(unsigned int, unsigned int, FreePointer_f *nullable)
+// */
+//
+//overloadable static inline void *nullable managed_alloc(unsigned int size)
+//{
+//    return managed_alloc(size, 1, NULL);
+//}
+#pragma endregion
 
 /**
  * @brief Reallocates a managed pointer.
@@ -231,14 +267,14 @@ overloadable static inline void *nullable managed_alloc(unsigned int size)
  * @return Pointer to the resized block of memory, or NULL if it could not reallocate.
  * @remarks This function works just as the realloc function, on success, the parametre @c ptr is freed.
  */
-ATTRIBUTE(warn_unused_result("Use the return value, fucker"), used)
-static inline void *nullable realloc_managed(void *nonnull ptr, unsigned int count)
+ATTRIBUTE(warn_unused_result("This function returns the new reallocated pointer on success, you must use the return value!"))
+static inline void *nullable PREFIX(realloc_managed)(void *nonnull ptr, unsigned int count)
 {
-    var mdata = metadataof(ptr);
+    var mdata = PREFIX(metadataof)(ptr);
     let size     = mdata->typesize,
         newsize  = size * count;
 
-    struct PointerMetadata *newptr = realloc(mdata, sizeof(struct PointerMetadata) + newsize);
+    struct PREFIX(PointerMetadata) *newptr = realloc(mdata, sizeof(struct PREFIX(PointerMetadata)) + newsize);
     if (newptr == NULL) {
 //        LOG_ERROR("Could not realloc pointer at %p with size %d (%d * %d)!", ptr, newsize, size, count);
         return NULL;
@@ -250,4 +286,21 @@ static inline void *nullable realloc_managed(void *nonnull ptr, unsigned int cou
     return newptr->data;
 }
 
-#pragma clang assume_nonnull end
+#if defined(MC_NO_AUTO)
+#   undef auto
+#   pragma pop_macro("auto")
+#endif
+
+#if defined(MC_NO_VAR_KEYWORDS)
+#   undef var
+#   undef let
+
+#   pragma pop_macro("var")
+#   pragma pop_macro("let")
+#endif
+
+#pragma pop_macro("PREFIX")
+
+#if defined (__clang__)
+#   pragma clang assume_nonnull end
+#endif

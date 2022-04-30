@@ -4,10 +4,14 @@
 
 #include "managed.h"
 
-/**
- * @brief Char pointer
- */
-typedef char *string;
+typedef char *
+#if defined(MC_PREFIX_STRING)
+    PREFIX(string);
+#   define string PREFIX(string)
+#else
+    string;
+#endif
+
 
 /**
  * @brief Creates a managed string.
@@ -15,25 +19,24 @@ typedef char *string;
  * @param len Length of the string.
  * @return Managed pointer to the new string.
  */
-overloadable static inline string mstr(const string str, int len)
+static inline string mstr(const string str, int len)
 {
     //+1 for the null term
-    string s = managed_alloc(len + 1, sizeof(char));
-    let mdata = metadataof(s);
+    string s = PREFIX(managed_alloc)(len + 1, sizeof(char));
+    let mdata = PREFIX(metadataof)(s);
 
     strncpy(s, str, len);
 
     return s;
 }
 
-/**
- * @copydoc mstr(const string, int)
- */
-USED_MOTHERFUCKER
-overloadable static inline string mstr(const string str)
-{
-    return mstr(str, strlen(str));
-}
+///**
+// * @copydoc mstr(const string, int)
+// */
+//overloadable static inline string mstr(const string str)
+//{
+//    return mstr(str, strlen(str));
+//}
 
 /**
  * @brief Concatenates a string onto a managed string.
@@ -44,11 +47,11 @@ overloadable static inline string mstr(const string str)
  * @remarks This function does not function as base @c strncat. Instead of writing through the buffer of @c dst, this function
  * allocates a new object, and returns it.
  */
-overloadable static inline string mstrcat(string dst, string src, int len)
+static inline string PREFIX(mstrcat)(string dst, string src, int len)
 {
-    let dst_mdata = metadataof(dst);
+    let dst_mdata = PREFIX(metadataof)(dst);
     let oldlen = dst_mdata->count;
-    string new = realloc_managed(dst, oldlen + len + 1);
+    string new = PREFIX(realloc_managed)(dst, oldlen + len + 1);
     //Already logged
     if (new == NULL)
         return NULL;
@@ -59,21 +62,20 @@ overloadable static inline string mstrcat(string dst, string src, int len)
     return new;
 }
 
-/**
- * @copydoc mstrcat(string, string, int)
- */
-USED_MOTHERFUCKER
-overloadable static inline string mstrcat(string dst, string src)
-{
-    let dst_mdata = metadataof(dst),
-        src_mdata = metadataof(src);
-
-    if (dst_mdata == NULL) {
-        return NULL;
-    }
-
-    return mstrcat(dst, src, src_mdata == NULL ? strlen(src) : src_mdata->count);
-}
+///**
+// * @copydoc mstrcat(string, string, int)
+// */
+//overloadable static inline string mstrcat(string dst, string src)
+//{
+//    let dst_mdata = PREFIX(metadataof)(dst),
+//        src_mdata = PREFIX(metadataof)(src);
+//
+//    if (dst_mdata == NULL) {
+//        return NULL;
+//    }
+//
+//    return mstrcat(dst, src, src_mdata == NULL ? strlen(src) : src_mdata->count);
+//}
 
 /**
  * @brief Copies the @c src string to the @c dst string
@@ -82,9 +84,9 @@ overloadable static inline string mstrcat(string dst, string src)
  * @param len
  * @return
  */
-overloadable static inline string mstrcpy(string dst, string src, int len)
+static inline string mstrcpy(string dst, string src, int len)
 {
-    string new = realloc_managed(dst, len);
+    string new = PREFIX(realloc_managed)(dst, len);
     //Already logged
     if (new == NULL)
         return NULL;
@@ -94,19 +96,6 @@ overloadable static inline string mstrcpy(string dst, string src, int len)
     return new;
 }
 
-/**
- * @copydoc mstrcpy(string, string int)
- */
-USED_MOTHERFUCKER
-overloadable static inline string mstrcpy(string dst, string src)
-{
-    let dst_mdata = metadataof(dst),
-        src_mdata = metadataof(src);
-
-    if (dst_mdata == NULL) {
-//        LOG_ERROR("dst (%p) is not a managed string!", dst);
-        return NULL;
-    }
-
-    return mstrcpy(dst, src, src_mdata == NULL ? strlen(src) : src_mdata->count);
-}
+#if defined(MC_PREFIX_STRING)
+#   undef string
+#endif
