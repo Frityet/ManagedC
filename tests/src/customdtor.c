@@ -20,7 +20,7 @@ static void MyStruct_free(struct MyStruct *mystruct)
 
 TEST(customdtor)
 {
-    auto struct MyStruct *obj = mc_managed_alloc(sizeof(*obj), 1, MyStruct_free);
+    auto struct MyStruct *obj = mc_alloc_managed(sizeof(*obj), 1, MyStruct_free);
     obj->num = 16;
     obj->reference = managed_string("Hello", 5);
     return true;

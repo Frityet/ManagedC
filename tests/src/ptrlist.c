@@ -2,7 +2,7 @@
 
 TEST(ptrlist)
 {
-    auto string *list = mc_managed_alloc(sizeof(string), 10, mc_free_managed);
+    auto string *list = mc_alloc_managed(sizeof(string), 10, mc_free_managed);
     for (int i = 0; i < 10; i++) {
         char buf[16];
         sprintf(buf, "Value: %d", i);

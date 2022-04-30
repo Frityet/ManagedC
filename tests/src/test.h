@@ -3,6 +3,9 @@
 #include "logger.h"
 #include "mstring.h"
 
+#include <errno.h>
+extern int errno;
+
 #define EVAL(x) x 
 #define STRMAC(x) EVAL(#x)
 

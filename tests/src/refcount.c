@@ -24,17 +24,17 @@ static void MyStruct_free(struct MyStruct *ptr)
 
 static void add_reference(struct MyStruct *s, int val)
 {
-    auto int *i = mc_managed_alloc(sizeof(int), 1, NULL);
+    auto int *i = mc_alloc_managed(sizeof(int), 1, NULL);
     *i = val;
     s->intref = mc_reference(i);
 }
 
 TEST(refcount)
 {
-    auto struct MyStruct *obj = mc_managed_alloc(sizeof(*obj), 1, MyStruct_free);
+    auto struct MyStruct *obj = mc_alloc_managed(sizeof(*obj), 1, MyStruct_free);
 
     {
-        auto struct CustomStruct *custrct = mc_managed_alloc(sizeof(*custrct), 1, CustomStruct_free);
+        auto struct CustomStruct *custrct = mc_alloc_managed(sizeof(*custrct), 1, CustomStruct_free);
         custrct->str = managed_string("Hello!", 6);
         obj->sref = mc_reference(custrct);
         add_reference(obj, 10);

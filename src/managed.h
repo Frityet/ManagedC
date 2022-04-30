@@ -35,16 +35,6 @@
 #   include <stdbool.h>
 #endif
 
-#if (defined(var))
-#   pragma push_macro("var")
-#endif
-#define var     __auto_type
-
-#if (defined(let))
-#   pragma push_macro("let")
-#endif
-#define let     const var
-
 #if !defined(MC_PREFIX)
 #   define MC_PREFIX mc_
 #endif
@@ -136,7 +126,8 @@ struct MC_ADD_PREFIX(PointerMetadata) {
  */
 static inline struct MC_ADD_PREFIX(PointerMetadata) *nullable MC_ADD_PREFIX(metadataof)(void *nonnull ptr)
 {
-    let mdata = (struct MC_ADD_PREFIX(PointerMetadata) *)(ptr - sizeof(struct MC_ADD_PREFIX(PointerMetadata)));
+    //Offsets the pointer by the size of the metadata, making the new address point right at the start of the metadata
+    struct MC_ADD_PREFIX(PointerMetadata) *mdata = (struct MC_ADD_PREFIX(PointerMetadata) *)(ptr - sizeof(struct MC_ADD_PREFIX(PointerMetadata)));
 
     return mdata->data == ptr ? mdata : NULL;
 }
@@ -148,9 +139,10 @@ static inline struct MC_ADD_PREFIX(PointerMetadata) *nullable MC_ADD_PREFIX(meta
  */
 static inline int MC_ADD_PREFIX(countof)(void *nonnull ptr)
 {
-    let mdata = MC_ADD_PREFIX(metadataof)(ptr);
+    struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
     if (mdata == NULL)
         return 0;
+
     return (int)mdata->count;
 }
 
@@ -161,9 +153,10 @@ static inline int MC_ADD_PREFIX(countof)(void *nonnull ptr)
  */
 static inline void *nullable MC_ADD_PREFIX(reference)(void *nonnull ptr)
 {
-    var mdata = MC_ADD_PREFIX(metadataof)(ptr);
+    struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
     if (mdata == NULL)
         return NULL;
+
     mdata->reference_count++;
     return mdata->data;
 }
@@ -176,18 +169,22 @@ static inline void *nullable MC_ADD_PREFIX(reference)(void *nonnull ptr)
 static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
 {
     void *ptr = *((void **)ref);
-    var mdata = MC_ADD_PREFIX(metadataof)(ptr);
+    struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
 
+    //We are freeing a pointer, so we can remove this reference and check if there is any other references.
     mdata->reference_count--;
-
     if (mdata->reference_count > 0)
         return;
 
     if (mdata->on_free != NULL) {
         for (unsigned int i = 0; i < mdata->count; i++) {
+            //Call the metadata's "on_free" method for every item in the pointer.
+            //Because the pointer is a void *, which has size of 1, we must multiply
+            //the index with the size of the type.
             mdata->on_free(ptr + (mdata->typesize * i));
         }
     }
+
     free(mdata);
 }
 
@@ -195,7 +192,6 @@ static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
  * @brief Releases the resources behind a managed pointer.
  * @param ref Managed pointer
  */
-
 static inline void MC_ADD_PREFIX(release)(const void *nonnull ref)
 { MC_ADD_PREFIX(free_managed)(&ref); }
 
@@ -208,22 +204,26 @@ static inline void MC_ADD_PREFIX(release)(const void *nonnull ref)
  * @return Managed pointer, or @c NULL if unable to allocate.
  */
 ATTRIBUTE(warn_unused_result("This function returns a new allocated pointer on success, you must use the return value!"))
-static inline void *nullable MC_ADD_PREFIX(managed_alloc)(unsigned int size, unsigned int count, MC_ADD_PREFIX(FreePointer_f) *nullable on_free)
+static inline void *nullable MC_ADD_PREFIX(alloc_managed)(unsigned int size, unsigned int count, MC_ADD_PREFIX(FreePointer_f) *nullable on_free)
 {
-    let total_size = count * size;
+    size_t total_size = count * size;
 
+    //Calloc initalises to 0, so it is best we use it.
     struct MC_ADD_PREFIX(PointerMetadata) *ptr = calloc(1, sizeof(struct MC_ADD_PREFIX(PointerMetadata)) + total_size);
     if (ptr == NULL) {
-//        LOG_ERROR("Could not alloc pointer with size %d (%d * %d)!", total_size, size, count);
         return NULL;
     }
 
-    ptr->count = count;
-    ptr->typesize = size;
-    ptr->total_size = total_size;
-    ptr->on_free = on_free;
-    ptr->reference_count++;
-    ptr->data = ptr + 1;
+    ptr->count          = count;
+    ptr->typesize       = size;
+    ptr->total_size     = total_size;
+    ptr->on_free        = on_free;
+    ptr->reference_count= 1;
+
+    //The address of the actual data is just after the metadata.
+    //We add 1 instead of `sizeof(*ptr)` because adding onto a pointer
+    //increases its address by the size of the type * the count to add.
+    ptr->data           = ptr + 1;
 
     return ptr->data;
 }
@@ -267,16 +267,17 @@ static inline void *nullable MC_ADD_PREFIX(managed_alloc)(unsigned int size, uns
 ATTRIBUTE(warn_unused_result("This function returns the new reallocated pointer on success, you must use the return value!"))
 static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, unsigned int count)
 {
-    var mdata = MC_ADD_PREFIX(metadataof)(ptr);
-    let size     = mdata->typesize,
-        newsize  = size * count;
+    struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
+    size_t  size     = mdata->typesize,
+            newsize  = size * count;
+
 
     struct MC_ADD_PREFIX(PointerMetadata) *newptr = realloc(mdata, sizeof(struct MC_ADD_PREFIX(PointerMetadata)) + newsize);
     if (newptr == NULL) {
-//        LOG_ERROR("Could not realloc pointer at %p with size %d (%d * %d)!", ptr, newsize, size, count);
         return NULL;
     }
 
+    //The rest of the fields are copied by `realloc`
     newptr->count   = count;
     newptr->data    = newptr + 1;
 
@@ -288,13 +289,6 @@ static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, u
 #   pragma pop_macro("auto")
 #endif
 
-#if !defined(MC_VAR_KEYWORDS)
-#   undef var
-#   undef let
-
-#   pragma pop_macro("var")
-#   pragma pop_macro("let")
-#endif
 
 //#pragma pop_macro("MC_ADD_PREFIX")
 

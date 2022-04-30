@@ -13,7 +13,7 @@ typedef char *
 #endif
 
 #if !defined(MC_NO_MSTR_MACRO)
-#   define mstr(str, ...) managed_string(str, __VA_OPT__(strlen(str)) __VA_ARGS__)
+#   define mstr(str) managed_string(str, strlen(str))
 #endif
 
 /**
@@ -25,20 +25,12 @@ typedef char *
 static inline string managed_string(const string str, int len)
 {
     //+1 for the null term
-    string s = MC_ADD_PREFIX(managed_alloc)(len + 1, sizeof(char), NULL);
+    string s = MC_ADD_PREFIX(alloc_managed)(len + 1, sizeof(char), NULL);
 
     strncpy(s, str, len);
 
     return s;
 }
-
-///**
-// * @copydoc managed_string(const string, int)
-// */
-//overloadable static inline string managed_string(const string str)
-//{
-//    return managed_string(str, strlen(str));
-//}
 
 /**
  * @brief Concatenates a string onto a managed string.
@@ -62,21 +54,6 @@ static inline string MC_ADD_PREFIX(mstrcat)(string dst, string src, int len)
 
     return new;
 }
-
-///**
-// * @copydoc mstrcat(string, string, int)
-// */
-//overloadable static inline string mstrcat(string dst, string src)
-//{
-//    let dst_mdata = MC_ADD_PREFIX(metadataof)(dst),
-//        src_mdata = MC_ADD_PREFIX(metadataof)(src);
-//
-//    if (dst_mdata == NULL) {
-//        return NULL;
-//    }
-//
-//    return mstrcat(dst, src, src_mdata == NULL ? strlen(src) : src_mdata->count);
-//}
 
 /**
  * @brief Copies the @c src string to the @c dst string
