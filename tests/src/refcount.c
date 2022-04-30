@@ -31,15 +31,15 @@ static void add_reference(struct MyStruct *s, int val)
 
 TEST(refcount)
 {
-    let auto obj = new(struct MyStruct, (void *)MyStruct_free);
+    let auto obj = new(struct MyStruct, (FreePointer_f *)MyStruct_free);
     {
-        let auto custrct = new(struct CustomStruct, (void *)CustomStruct_free);
+        let auto custrct = new(struct CustomStruct, (FreePointer_f *)CustomStruct_free);
         custrct->str = mstr("Hello!");
         obj->sref = ref(custrct);
         add_reference(obj, 10);
     }
 
-    TEST_EXPR(strncmp(obj->sref->str, "Hello!", lengthof(obj->sref)) == 0, "Sref str: %s", obj->sref->str);
+    TEST_EXPR(strncmp(obj->sref->str, "Hello!", countof(obj->sref)) == 0, "Sref str: %s", obj->sref->str);
     TEST_EXPR(*obj->intref == 10, "Intref: %d", *obj->intref);
 
     return true;

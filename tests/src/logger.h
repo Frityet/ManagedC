@@ -31,27 +31,27 @@ static void logbase(enum LogType logtype, const char *msg, int line, const char 
     switch (logtype) {
         default:
         case LOG_TYPE_INFO: {
-            fprintf(stdout, LOG_COLOUR_CODE_INFO "[./%s:%d - %s] %s\n" LOG_COLOUR_CODE_RESET, file, line, func, msg);
+            fprintf(stdout, LOG_COLOUR_CODE_INFO "[%s:%d - %s] %s\n" LOG_COLOUR_CODE_RESET, file, line, func, msg);
             break;
         }
         case LOG_TYPE_SUCCESS: {
-            fprintf(stdout, LOG_COLOUR_CODE_SUCCESS "[./%s:%d - %s] %s\n" LOG_COLOUR_CODE_RESET, file, line, func, msg);
+            fprintf(stdout, LOG_COLOUR_CODE_SUCCESS "[%s:%d - %s] %s\n" LOG_COLOUR_CODE_RESET, file, line, func, msg);
             break;
         }
         case LOG_TYPE_DEBUG: {
-            fprintf(stdout, LOG_COLOUR_CODE_DEBUG "[./%s:%d - %s] %s\n" LOG_COLOUR_CODE_RESET, file, line, func, msg);
+            fprintf(stdout, LOG_COLOUR_CODE_DEBUG "[%s:%d - %s] %s\n" LOG_COLOUR_CODE_RESET, file, line, func, msg);
             break;
         }
         case LOG_TYPE_WARNING: {
-            fprintf(stdout, LOG_COLOUR_CODE_WARNING "[./%s:%d - %s] %s\n" LOG_COLOUR_CODE_RESET, file, line, func, msg);
+            fprintf(stdout, LOG_COLOUR_CODE_WARNING "[%s:%d - %s] %s\n" LOG_COLOUR_CODE_RESET, file, line, func, msg);
             break;
         }
         case LOG_TYPE_ERROR: {
-            fprintf(stderr, LOG_COLOUR_CODE_ERROR "[./%s:%d - %s] %s\n" LOG_COLOUR_CODE_RESET, file, line, func, msg);
+            fprintf(stderr, LOG_COLOUR_CODE_ERROR "[%s:%d - %s] %s\n" LOG_COLOUR_CODE_RESET, file, line, func, msg);
             break;
         }
         case LOG_TYPE_FATAL: {
-            fprintf(stderr, LOG_COLOUR_CODE_FATAL "[./%s:%d - %s] %s\n" LOG_COLOUR_CODE_RESET, file, line, func, msg);
+            fprintf(stderr, LOG_COLOUR_CODE_FATAL "[%s:%d - %s] %s\n" LOG_COLOUR_CODE_RESET, file, line, func, msg);
             break;
         }
     }

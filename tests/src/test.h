@@ -19,8 +19,8 @@ typedef const struct Test {
 
 #define TEST_EXPR(expr, err, ...) ({\
                                 extern void exit(int);\
-                                if (expr) LOG_SUCCESS("{Expression \"" STRMAC(expr) "\" succeeded!}");\
-                                else { LOG_FATAL("{Expression \"" STRMAC(expr) " failed!} %s", err __VA_OPT__(,) __VA_ARGS__); return false; }\
+                                if (expr) LOG_SUCCESS("Expression \"" STRMAC(expr) "\" succeeded!");\
+                                else { LOG_FATAL("Expression \"" STRMAC(expr) " failed!\n\t- " err __VA_OPT__(,) __VA_ARGS__); return false; }\
                             })
 
 #define EXTERN_TEST(_name) ({ __COUNTER__; extern Test_t _name##_info; _name##_info; })
