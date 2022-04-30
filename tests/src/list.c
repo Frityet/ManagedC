@@ -2,8 +2,7 @@
 
 TEST(list)
 {
-    let auto list = new(int, 10);
-    debug mdata = metadataof(list);
+    auto int *list = mc_managed_alloc(sizeof(*list), 10, NULL);
 
     for (int i = 0; i < 10; i++) {
         list[i] = i;

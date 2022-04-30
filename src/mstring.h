@@ -6,12 +6,15 @@
 
 typedef char *
 #if defined(MC_PREFIX_STRING)
-    PREFIX(string);
-#   define string PREFIX(string)
+    MC_ADD_PREFIX(string);
+#   define string MC_ADD_PREFIX(string)
 #else
     string;
 #endif
 
+#if !defined(MC_NO_MSTR_MACRO)
+#   define mstr(str, ...) managed_string(str, __VA_OPT__(strlen(str)) __VA_ARGS__)
+#endif
 
 /**
  * @brief Creates a managed string.
@@ -19,11 +22,10 @@ typedef char *
  * @param len Length of the string.
  * @return Managed pointer to the new string.
  */
-static inline string mstr(const string str, int len)
+static inline string managed_string(const string str, int len)
 {
     //+1 for the null term
-    string s = PREFIX(managed_alloc)(len + 1, sizeof(char));
-    let mdata = PREFIX(metadataof)(s);
+    string s = MC_ADD_PREFIX(managed_alloc)(len + 1, sizeof(char), NULL);
 
     strncpy(s, str, len);
 
@@ -31,11 +33,11 @@ static inline string mstr(const string str, int len)
 }
 
 ///**
-// * @copydoc mstr(const string, int)
+// * @copydoc managed_string(const string, int)
 // */
-//overloadable static inline string mstr(const string str)
+//overloadable static inline string managed_string(const string str)
 //{
-//    return mstr(str, strlen(str));
+//    return managed_string(str, strlen(str));
 //}
 
 /**
@@ -47,12 +49,11 @@ static inline string mstr(const string str, int len)
  * @remarks This function does not function as base @c strncat. Instead of writing through the buffer of @c dst, this function
  * allocates a new object, and returns it.
  */
-static inline string PREFIX(mstrcat)(string dst, string src, int len)
+static inline string MC_ADD_PREFIX(mstrcat)(string dst, string src, int len)
 {
-    let dst_mdata = PREFIX(metadataof)(dst);
-    let oldlen = dst_mdata->count;
-    string new = PREFIX(realloc_managed)(dst, oldlen + len + 1);
-    //Already logged
+    int oldlen = MC_ADD_PREFIX(metadataof)(dst)->count;
+    string new = MC_ADD_PREFIX(realloc_managed)(dst, oldlen + len + 1);
+
     if (new == NULL)
         return NULL;
 
@@ -67,8 +68,8 @@ static inline string PREFIX(mstrcat)(string dst, string src, int len)
 // */
 //overloadable static inline string mstrcat(string dst, string src)
 //{
-//    let dst_mdata = PREFIX(metadataof)(dst),
-//        src_mdata = PREFIX(metadataof)(src);
+//    let dst_mdata = MC_ADD_PREFIX(metadataof)(dst),
+//        src_mdata = MC_ADD_PREFIX(metadataof)(src);
 //
 //    if (dst_mdata == NULL) {
 //        return NULL;
@@ -86,7 +87,7 @@ static inline string PREFIX(mstrcat)(string dst, string src, int len)
  */
 static inline string mstrcpy(string dst, string src, int len)
 {
-    string new = PREFIX(realloc_managed)(dst, len);
+    string new = MC_ADD_PREFIX(realloc_managed)(dst, len);
     //Already logged
     if (new == NULL)
         return NULL;

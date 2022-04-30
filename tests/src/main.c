@@ -14,7 +14,7 @@ int main()
     LOG_INFO("%d tests to execute!", TESTC);
 
     for (int i = 0; i < TESTC; i++) {
-        let test = TESTS[i];
+        Test_t test = TESTS[i];
 
         LOG_INFO("Executing test %s (%d/%d)", test.name, i, TESTC);
         if (test.on_test()) 

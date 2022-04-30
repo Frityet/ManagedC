@@ -7,19 +7,21 @@ struct MyStruct {
 
 static void MyStruct_free(struct MyStruct *mystruct)
 {
+#ifdef __clang__
     (^bool(void) {
         TEST_EXPR(mystruct->num == 16, "Expected value to be 16 (got %d!)", mystruct->num);
-        TEST_EXPR(strncmp(mystruct->reference, "Hello", countof(mystruct->reference)) == 0, "Expected \"Hello\", (got %s)", mystruct->reference);
+        TEST_EXPR(strncmp(mystruct->reference, "Hello", mc_countof(mystruct->reference)) == 0, "Expected \"Hello\", (got %s)", mystruct->reference);
         return true;
     })();
+#endif
 
-    release(mystruct->reference);
+    mc_release(mystruct->reference);
 }
 
 TEST(customdtor)
 {
-    auto var obj = new(struct MyStruct, (FreePointer_f *)MyStruct_free);
+    auto struct MyStruct *obj = mc_managed_alloc(sizeof(*obj), 1, MyStruct_free);
     obj->num = 16;
-    obj->reference = mstr("Hello");
+    obj->reference = managed_string("Hello", 5);
     return true;
 }

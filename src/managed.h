@@ -49,10 +49,7 @@
 #   define MC_PREFIX mc_
 #endif
 
-#if defined(PREFIX)
-#   pragma push_macro("PREFIX")
-#endif
-#define PREFIX(x) CONCAT(MC_PREFIX, x)
+#define MC_ADD_PREFIX(x) CONCAT(MC_PREFIX, x)
 
 #define ATTRIBUTE(...) __attribute__((__VA_ARGS__))
 
@@ -62,12 +59,12 @@
 /**
  *  @brief Automatically calls free_managed at the end of the scope.
  */
-#define auto    ATTRIBUTE(cleanup(free_managed))
+#define auto    ATTRIBUTE(cleanup(MC_ADD_PREFIX(free_managed)))
 
 #if !defined(MC_NO_NULLABLE) && defined(__clang__)
-#   define nullable        _Nullable
-#   define nonnull         _Nonnull
-#   define null_unspec    _Null_unspecified
+#   define nullable         _Nullable
+#   define nonnull          _Nonnull
+#   define null_unspec      _Null_unspecified
 #else
 #   define nullable
 #   define nonnull
@@ -88,18 +85,18 @@
 /**
  * @brief Gets a reference to a managed pointer, incrementing the pointer's reference count by 1.
  */
-#   define ref(obj) (typeof(obj))reference(obj)
+#   define ref(obj) (typeof(obj))MC_ADD_PREFIX(reference)(obj)
 #endif
 
 /**
  * @brief Callback type for freeing a managed pointer.
  */
-typedef void PREFIX(FreePointer_f)(const void *nonnull);
+typedef void MC_ADD_PREFIX(FreePointer_f)(const void *nonnull);
 
 /**
  * @brief Metadata about a managed pointer.
  */
-struct PREFIX(PointerMetadata) {
+struct MC_ADD_PREFIX(PointerMetadata) {
     /**
      * @brief Total size of the allocated data (without the size of the metadata).
      */
@@ -123,7 +120,7 @@ struct PREFIX(PointerMetadata) {
     /**
      * @brief Callback to be executed on each element in the data pointer.
      */
-    PREFIX(FreePointer_f)   *nullable on_free;
+    MC_ADD_PREFIX(FreePointer_f)   *nullable on_free;
 
     /**
      * @brief Pointer to the allocated data.
@@ -134,12 +131,12 @@ struct PREFIX(PointerMetadata) {
 /**
  * @brief Gets the metadata of a managed pointer.
  * @param ptr Managed pointer
- * @return struct PREFIX(PointerMetadata)
+ * @return struct MC_ADD_PREFIX(PointerMetadata)
  * @refitem Metadata of the pointer.
  */
-static inline struct PREFIX(PointerMetadata) *nullable PREFIX(metadataof)(void *nonnull ptr)
+static inline struct MC_ADD_PREFIX(PointerMetadata) *nullable MC_ADD_PREFIX(metadataof)(void *nonnull ptr)
 {
-    let mdata = (struct PREFIX(PointerMetadata) *)(ptr - sizeof(struct PREFIX(PointerMetadata)));
+    let mdata = (struct MC_ADD_PREFIX(PointerMetadata) *)(ptr - sizeof(struct MC_ADD_PREFIX(PointerMetadata)));
 
     return mdata->data == ptr ? mdata : NULL;
 }
@@ -149,9 +146,9 @@ static inline struct PREFIX(PointerMetadata) *nullable PREFIX(metadataof)(void *
  * @param ptr Managed pointer
  * @return Count of items in the pointer.
  */
-static inline int PREFIX(countof)(void *nonnull ptr)
+static inline int MC_ADD_PREFIX(countof)(void *nonnull ptr)
 {
-    let mdata = PREFIX(metadataof)(ptr);
+    let mdata = MC_ADD_PREFIX(metadataof)(ptr);
     if (mdata == NULL)
         return 0;
     return (int)mdata->count;
@@ -162,9 +159,9 @@ static inline int PREFIX(countof)(void *nonnull ptr)
  * @param ptr Managed pointer.
  * @return ptr
  */
-static inline void *nullable PREFIX(reference)(void *nonnull ptr)
+static inline void *nullable MC_ADD_PREFIX(reference)(void *nonnull ptr)
 {
-    var mdata = PREFIX(metadataof)(ptr);
+    var mdata = MC_ADD_PREFIX(metadataof)(ptr);
     if (mdata == NULL)
         return NULL;
     mdata->reference_count++;
@@ -176,10 +173,10 @@ static inline void *nullable PREFIX(reference)(void *nonnull ptr)
  * @param ref Pointer to the managed pointer (double pointer).
  */
 
-static inline void PREFIX(free_managed)(const void *nonnull ref)
+static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
 {
     void *ptr = *((void **)ref);
-    var mdata = PREFIX(metadataof)(ptr);
+    var mdata = MC_ADD_PREFIX(metadataof)(ptr);
 
     mdata->reference_count--;
 
@@ -199,8 +196,8 @@ static inline void PREFIX(free_managed)(const void *nonnull ref)
  * @param ref Managed pointer
  */
 
-static inline void PREFIX(release)(const void *nonnull ref)
-{ PREFIX(free_managed)(&ref); }
+static inline void MC_ADD_PREFIX(release)(const void *nonnull ref)
+{ MC_ADD_PREFIX(free_managed)(&ref); }
 
 
 /**
@@ -211,11 +208,11 @@ static inline void PREFIX(release)(const void *nonnull ref)
  * @return Managed pointer, or @c NULL if unable to allocate.
  */
 ATTRIBUTE(warn_unused_result("This function returns a new allocated pointer on success, you must use the return value!"))
-static inline void *nullable PREFIX(managed_alloc)(unsigned int size, unsigned int count, PREFIX(FreePointer_f) *nullable on_free)
+static inline void *nullable MC_ADD_PREFIX(managed_alloc)(unsigned int size, unsigned int count, MC_ADD_PREFIX(FreePointer_f) *nullable on_free)
 {
     let total_size = count * size;
 
-    struct PREFIX(PointerMetadata) *ptr = calloc(1, sizeof(struct PREFIX(PointerMetadata)) + total_size);
+    struct MC_ADD_PREFIX(PointerMetadata) *ptr = calloc(1, sizeof(struct MC_ADD_PREFIX(PointerMetadata)) + total_size);
     if (ptr == NULL) {
 //        LOG_ERROR("Could not alloc pointer with size %d (%d * %d)!", total_size, size, count);
         return NULL;
@@ -268,13 +265,13 @@ static inline void *nullable PREFIX(managed_alloc)(unsigned int size, unsigned i
  * @remarks This function works just as the realloc function, on success, the parametre @c ptr is freed.
  */
 ATTRIBUTE(warn_unused_result("This function returns the new reallocated pointer on success, you must use the return value!"))
-static inline void *nullable PREFIX(realloc_managed)(void *nonnull ptr, unsigned int count)
+static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, unsigned int count)
 {
-    var mdata = PREFIX(metadataof)(ptr);
+    var mdata = MC_ADD_PREFIX(metadataof)(ptr);
     let size     = mdata->typesize,
         newsize  = size * count;
 
-    struct PREFIX(PointerMetadata) *newptr = realloc(mdata, sizeof(struct PREFIX(PointerMetadata)) + newsize);
+    struct MC_ADD_PREFIX(PointerMetadata) *newptr = realloc(mdata, sizeof(struct MC_ADD_PREFIX(PointerMetadata)) + newsize);
     if (newptr == NULL) {
 //        LOG_ERROR("Could not realloc pointer at %p with size %d (%d * %d)!", ptr, newsize, size, count);
         return NULL;
@@ -291,7 +288,7 @@ static inline void *nullable PREFIX(realloc_managed)(void *nonnull ptr, unsigned
 #   pragma pop_macro("auto")
 #endif
 
-#if defined(MC_NO_VAR_KEYWORDS)
+#if !defined(MC_VAR_KEYWORDS)
 #   undef var
 #   undef let
 
@@ -299,7 +296,7 @@ static inline void *nullable PREFIX(realloc_managed)(void *nonnull ptr, unsigned
 #   pragma pop_macro("let")
 #endif
 
-#pragma pop_macro("PREFIX")
+//#pragma pop_macro("MC_ADD_PREFIX")
 
 #if defined (__clang__)
 #   pragma clang assume_nonnull end
