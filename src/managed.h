@@ -541,7 +541,13 @@ That's all there is to it!
     /**
      * @brief C11 Bools suck massive balls, so this is competent.
      */
-    typedef enum Bool: _Bool { true = (_Bool)1, false = (_Bool)0 } bool;
+    #ifdef __clang__
+    typedef enum Bool: _Bool { 
+    #else
+    typedef enum Bool { 
+    #endif
+        true = (_Bool)1, false = (_Bool)0 
+    } bool;
 #else
 #   include <stdbool.h>
 #endif
