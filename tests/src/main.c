@@ -12,7 +12,8 @@ int main()
         EXTERN_TEST(customdtor),
         EXTERN_TEST(refcount),
         EXTERN_TEST(list),
-        EXTERN_TEST(ptrlist)
+        EXTERN_TEST(ptrlist),
+        EXTERN_TEST(thread)
     };
     const int TESTC = TEST_COUNT;
 

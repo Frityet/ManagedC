@@ -7,7 +7,6 @@
 
 #include "logger.h"
 #include "mstring.h"
-#include "mlist.h"
 
 #include <errno.h>
 extern int errno;

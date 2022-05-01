@@ -597,7 +597,7 @@ struct MC_ADD_PREFIX(PointerMetadata) {
     /**
      * @brief Amount elements in the data pointer.
      */
-    unsigned int    count;
+    _Atomic unsigned int count;
 
     /**
      * @brief Size of the type represented in the data pointer.
@@ -607,7 +607,7 @@ struct MC_ADD_PREFIX(PointerMetadata) {
     /**
      * @brief Count of references to this pointer.
      */
-    unsigned int    reference_count;
+    _Atomic unsigned int    reference_count;
 
     /**
      * @brief Callback to be executed on each element in the data pointer.
