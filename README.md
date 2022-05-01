@@ -147,3 +147,9 @@ As `count` is the most common field you will probably access, you can call
 unsigned int mc_countof(void *ptr);
 ```
 to quickly get the count of elements in the pointer.
+
+### TODO
+- [ ] Safer and better thread support
+- [ ] Solution to circular references
+- [ ] Solution for MSVC/ISO-C
+- [ ] Easier referencing
