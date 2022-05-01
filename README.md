@@ -14,6 +14,10 @@ If you do not use `xmake` then you can just copy the file `managed.h` from `src/
 
 ### Allocation and deallocation
 
+> |ℹ️ Note ℹ️        |
+> |-----------------|
+> | to change the prefix used on each function in ManagedC, define the `MC_PREFIX` macro before including!|    
+
 To get a "managed" type, you must allocate your type with 
 ```c
 void *mc_alloc_managed(unsigned int size, unsigned int count, void (*on_free)(void *))
