@@ -1,5 +1,3 @@
-
-
 /**
  * @file managed.h
  * @brief Implements a garbage collector for pointers.
@@ -511,6 +509,7 @@ That's all there is to it!
 
 #pragma once
 #include <stdlib.h>
+#include <stdatomic.h>
 
 #if defined(__clang__)
 #   pragma clang assume_nonnull begin
@@ -592,7 +591,7 @@ struct MC_ADD_PREFIX(PointerMetadata) {
     /**
      * @brief Total size of the allocated data (without the size of the metadata).
      */
-    unsigned int    total_size;
+    _Atomic unsigned int total_size;
 
     /**
      * @brief Amount elements in the data pointer.
@@ -662,6 +661,7 @@ static inline void *nullable MC_ADD_PREFIX(reference)(void *nonnull ptr)
     if (mdata == NULL)
         return NULL;
 
+
     mdata->reference_count++;
     return mdata->data;
 }
@@ -719,11 +719,11 @@ static inline void *nullable MC_ADD_PREFIX(alloc_managed)(unsigned int size, uns
         return NULL;
     }
 
-    ptr->count          = count;
+    ptr->count          = ATOMIC_VAR_INIT(count);
     ptr->typesize       = size;
-    ptr->total_size     = total_size;
+    ptr->total_size     = ATOMIC_VAR_INIT(total_size);
     ptr->on_free        = on_free;
-    ptr->reference_count= 1;
+    ptr->reference_count= ATOMIC_VAR_INIT(1);
 
     //The address of the actual data is just after the metadata.
     //We add 1 instead of `sizeof(*ptr)` because adding onto a pointer

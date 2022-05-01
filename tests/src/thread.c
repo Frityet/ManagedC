@@ -1,3 +1,8 @@
+/**
+ * @file thread.c
+ * @brief Tests for race conditions and thread saftey
+ */
+
 #include "test.h"
 
 #include <pthread.h>
