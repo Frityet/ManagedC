@@ -12,7 +12,10 @@ void *thread_func(int **ref)
     //You can get a the reference from the main or this thread
     auto int *ptr = mc_reference(*ref);
     ptr = mc_realloc_managed(ptr, 8);
-    TEST_EXPR(ptr != NULL, "Could not reallocate reference!");
+    if (ptr == NULL) {
+//    TEST_EXPR(ptr != NULL, "Could not reallocate reference!");
+        fprintf(stderr, "Could not reallocate reference!\n");
+    }
     for (int i = 0; i < 8; i++) {
         ptr[i] = 8 - i;
     }
@@ -35,7 +38,7 @@ TEST(thread)
 {
     auto int *ptr = mc_alloc_managed(sizeof(int), 1, NULL);
     pthread_t thr;
-    pthread_create(&thr, NULL, thread_func, &ptr);
+    pthread_create(&thr, NULL, (void *)thread_func, &ptr);
     resize_ref(&ptr);
 
     LOG_DEBUG("Ptr count: %d", mc_countof(ptr));

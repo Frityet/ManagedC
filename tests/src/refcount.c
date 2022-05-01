@@ -34,10 +34,10 @@ static void add_reference(struct MyStruct *s, int val)
 
 TEST(refcount)
 {
-    auto struct MyStruct *obj = mc_alloc_managed(sizeof(*obj), 1, MyStruct_free);
+    auto struct MyStruct *obj = mc_alloc_managed(sizeof(*obj), 1, (void *)MyStruct_free);
 
     {
-        auto struct CustomStruct *custrct = mc_alloc_managed(sizeof(*custrct), 1, CustomStruct_free);
+        auto struct CustomStruct *custrct = mc_alloc_managed(sizeof(*custrct), 1, (void *)CustomStruct_free);
         custrct->str = managed_string("Hello!", 6);
         obj->sref = mc_reference(custrct);
         add_reference(obj, 10);

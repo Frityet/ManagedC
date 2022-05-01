@@ -2,15 +2,16 @@ add_rules("mode.debug")
 
 local CFLAGS<const> = {
     "-Wall", "-Wextra", "-Werror",
-    -- "-fmodules", "-fmodule-map-file=$(projectdir)/src/modules.modulemap",
-    "-fms-extensions", "-Wno-microsoft-anon-tag",
-    sanitizers = "leak,undefined"
+    sanitizers = ""
+--     "leak,undefined"
 }
 
 target("Test")
 do
     set_kind("binary")
     add_files("src/**.c")
+    add_cflags(CFLAGS, "-fsanitize=" .. CFLAGS.sanitizers, "-fno-omit-frame-pointer")
+    add_ldflags("-fsanitize=" .. CFLAGS.sanitizers)
 
     add_deps("ManagedC")
 end
