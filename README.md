@@ -4,23 +4,8 @@ Library to add a reference-counter GC to C. See `tests/src/` for examples
 
 ## Installation
 
-Using [xmake](https://xmake.io) you can easily use this library by including this package declaration in your `xmake.lua`
+Using [xmake](https://xmake.io) you can easily use this library by including this package declaration in your `xmake.lua`: [package.lua](package.lua)
 
-```lua
-package("managedc")
-    set_kind("library", { headeronly = true })
-    set_description("Reference counter garabage collection for C")
-
-    add_urls("https://github.com/Frityet/ManagedC.git")
-    add_versions("1.0.0", "350800021f8d41e5717e76f8dfb0485d45781996")
-
-    on_install(function (package)
-        local configs = {}
-
-        import("package.tools.xmake").install(package, configs)
-    end)
-package_end()
-```
 An entry into `xrepo` will be available soon.
 
 If you do not use `xmake` then you can just copy the file `managed.h` from `src/`. `mstring.h` adds helper functions for string usage.
@@ -162,3 +147,9 @@ As `count` is the most common field you will probably access, you can call
 unsigned int mc_countof(void *ptr);
 ```
 to quickly get the count of elements in the pointer.
+
+### TODO
+- [ ] Safer and better thread support
+- [ ] Solution to circular references
+- [ ] Solution for MSVC/ISO-C
+- [ ] Easier referencing
