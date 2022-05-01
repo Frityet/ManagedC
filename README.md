@@ -14,6 +14,10 @@ If you do not use `xmake` then you can just copy the file `managed.h` from `src/
 
 ### Allocation and deallocation
 
+> |ℹ️ Note ℹ️        |
+> |-----------------|
+> | to change the prefix used on each function in ManagedC, define the `MC_PREFIX` macro before including!|    
+
 To get a "managed" type, you must allocate your type with 
 ```c
 void *mc_alloc_managed(unsigned int size, unsigned int count, void (*on_free)(void *))
@@ -66,7 +70,7 @@ void free_int_ref(int **ref)
 
 int main()
 {
-    auto int **alloc_list = mc_alloc_managed(sizeof(int *), 5, free_managed); 
+    auto int **alloc_list = mc_alloc_managed(sizeof(int *), 5, free_int_ref); 
     
     alloc_list[0] = mc_alloc_managed(sizeof(int), 1, NULL);
     *alloc_list[0] = 10;
@@ -149,7 +153,8 @@ unsigned int mc_countof(void *ptr);
 to quickly get the count of elements in the pointer.
 
 ### TODO
-- [ ] Safer and better thread support
-- [ ] Solution to circular references
-- [ ] Solution for MSVC/ISO-C
-- [ ] Easier referencing
+- [ ] Safer and better thread support   - [issue](https://github.com/Frityet/ManagedC/issues/1)
+- [ ] Fix for reallocation              - [issue](https://github.com/Frityet/ManagedC/issues/3)
+- [ ] Solution to circular references   - [issue](https://github.com/Frityet/ManagedC/issues/2)
+- [ ] Solution for MSVC/ISO-C           - [issue](https://github.com/Frityet/ManagedC/issues/4)
+- [ ] Easier/standardized referencing   - [issue](https://github.com/Frityet/ManagedC/issues/5)
