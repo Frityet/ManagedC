@@ -149,7 +149,8 @@ unsigned int mc_countof(void *ptr);
 to quickly get the count of elements in the pointer.
 
 ### TODO
-- [ ] Safer and better thread support
-- [ ] Solution to circular references
-- [ ] Solution for MSVC/ISO-C
-- [ ] Easier referencing
+- [ ] Safer and better thread support   - [issue](https://github.com/Frityet/ManagedC/issues/1)
+- [ ] Fix for reallocation              - [issue](https://github.com/Frityet/ManagedC/issues/3)
+- [ ] Solution to circular references   - [issue](https://github.com/Frityet/ManagedC/issues/2)
+- [ ] Solution for MSVC/ISO-C           - [issue](https://github.com/Frityet/ManagedC/issues/4)
+- [ ] Easier/standardized referencing   - [issue](https://github.com/Frityet/ManagedC/issues/5)
