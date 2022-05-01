@@ -66,7 +66,7 @@ void free_int_ref(int **ref)
 
 int main()
 {
-    auto int **alloc_list = mc_alloc_managed(sizeof(int *), 5, free_managed); 
+    auto int **alloc_list = mc_alloc_managed(sizeof(int *), 5, free_int_ref); 
     
     alloc_list[0] = mc_alloc_managed(sizeof(int), 1, NULL);
     *alloc_list[0] = 10;
