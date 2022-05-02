@@ -1,5 +1,7 @@
 add_rules("mode.release", "mode.debug")
 
+includes("package.lua")
+
 local CFLAGS<const> = {
     "-Wall", "-Wextra", "-Werror",
     sanitizers = "leak,undefined"
@@ -10,6 +12,8 @@ local DEPENDENCIES<const> = {
 }
 
 add_requires(DEPENDENCIES)
+
+
 
 target("Example")
 do
