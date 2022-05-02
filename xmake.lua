@@ -9,5 +9,4 @@ do
 end
 target_end()
 
-includes("package.lua")
-includes("tests", "example")
+includes("tests")
