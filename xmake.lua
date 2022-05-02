@@ -9,4 +9,4 @@ do
 end
 target_end()
 
-includes("tests")
+includes("tests", "example")

@@ -1,6 +1,6 @@
 add_rules("mode.release", "mode.debug")
 
-includes("package.lua")
+includes("../package.lua")
 
 local CFLAGS<const> = {
     "-Wall", "-Wextra", "-Werror",
