@@ -11,7 +11,7 @@ TEST(ptrlist)
     for (int i = 0; i < 10; i++) {
         char buf[16];
         sprintf(buf, "Value: %d", i);
-        list[i] = managed_string(buf, 16);
+        list[i] = mc_managed_string(buf, 16);
     }
 
     TEST_EXPR(strncmp(list[5], "Value: 5", mc_countof(list[5])) == 0, "Unexpected value! (Expected \"Value: 5\")");

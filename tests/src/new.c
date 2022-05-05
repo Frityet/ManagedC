@@ -10,7 +10,7 @@ TEST(new)
 {
     auto struct MyStruct *s = new(struct MyStruct, {
         .num = 10,
-        .str = managed_string("Whoop!", 6),
+        .str = mc_managed_string("Whoop!", 6),
         .array = mc_alloc_managed(sizeof(string), 10, mc_free_managed)
     });
 
