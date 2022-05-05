@@ -558,7 +558,13 @@ That's all there is to it!
 
 #define MC_ADD_PREFIX(x) CONCAT(MC_PREFIX, x)
 
-#define ATTRIBUTE(...) __attribute__((__VA_ARGS__))
+#if !defined(ATTRIBUTE)
+#   define ATTRIBUTE(...) __attribute__((__VA_ARGS__))
+#endif
+
+#if !defined(MC_NO_NEW) && !defined(new)
+#   define new(type, ...) (type *)memcpy(MC_ADD_PREFIX(alloc_managed), (type []) { __VA_ARGS__ }, sizeof(type))
+#endif
 
 #if defined(auto)
 #   pragma push_macro("auto")
@@ -597,32 +603,32 @@ struct MC_ADD_PREFIX(PointerMetadata) {
     /**
      * @brief Total size of the allocated data (without the size of the metadata).
      */
-    _Atomic unsigned int total_size;
+    _Atomic unsigned int            total_size;
 
     /**
      * @brief Amount elements in the data pointer.
      */
-    _Atomic unsigned int count;
+    _Atomic unsigned int            count;
 
     /**
      * @brief Size of the type represented in the data pointer.
      */
-    unsigned int    typesize;
+    unsigned int                    typesize;
 
     /**
      * @brief Count of references to this pointer.
      */
-    _Atomic unsigned int    reference_count;
+    _Atomic unsigned int            reference_count;
 
     /**
      * @brief Callback to be executed on each element in the data pointer.
      */
-    MC_ADD_PREFIX(FreePointer_f)   *nullable on_free;
+    MC_ADD_PREFIX(FreePointer_f)    *nullable on_free;
 
     /**
      * @brief Pointer to the allocated data.
      */
-    void            *nonnull data;
+    void                            *nonnull data;
 };
 
 /**
@@ -666,8 +672,7 @@ static inline void *nullable MC_ADD_PREFIX(reference)(void *nonnull ptr)
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
     if (mdata == NULL)
         return NULL;
-
-
+    
     mdata->reference_count++;
     return mdata->data;
 }
@@ -789,8 +794,9 @@ static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, u
     }
 
     //The rest of the fields are copied by `realloc`.
-    newptr->count   = count;
-    newptr->data    = newptr + 1;
+    newptr->count       = count;
+    newptr->total_size  = newsize;
+    newptr->data        = newptr + 1;
 
     return newptr->data;
 }

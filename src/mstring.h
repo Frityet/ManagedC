@@ -9,12 +9,14 @@
 
 #include "managed.h"
 
-typedef char *
-#if defined(MC_PREFIX_STRING)
-    MC_ADD_PREFIX(string);
-#   define string MC_ADD_PREFIX(string)
-#else
-    string;
+#if !defined(MC_NO_STRING)
+    typedef char *
+#   if defined(MC_PREFIX_STRING)
+       MC_ADD_PREFIX(string);
+#      define string MC_ADD_PREFIX(string)
+#   else
+       string;
+#   endif
 #endif
 
 #if !defined(MC_NO_MSTR_MACRO)
