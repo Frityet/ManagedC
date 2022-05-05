@@ -18,6 +18,6 @@ package("managedc")
 
     on_test(function (package)
          assert(package:has_cfuncs("mc_alloc_managed", { includes = "managed.h" }))
-         assert(package:has_cfuncs("managed_string", { includes = "mstring.h" }))
+         assert(package:has_cfuncs("mc_managed_string", { includes = "mstring.h" }))
     end)
 package_end()
