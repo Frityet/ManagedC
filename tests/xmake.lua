@@ -2,8 +2,7 @@ add_rules("mode.debug")
 
 local CFLAGS<const> = {
     "-Wall", "-Wextra", "-Werror",
-    sanitizers = ""
---     "leak,undefined"
+    sanitizers = "address,leak,undefined"
 }
 
 target("Test")

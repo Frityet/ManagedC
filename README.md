@@ -63,9 +63,9 @@ void free_int_ref(int **ref)
 {
     printf("Value: %d\n", **ref);
     
-    //free_managed is used for deallocating "managed" types.
+    //mc_free_managed is used for deallocating "managed" types.
     //It must take in a pointer to the reference, not just the reference
-    free_managed(ref);
+    mc_free_managed(ref);
 }
 
 int main()
@@ -153,7 +153,7 @@ unsigned int mc_countof(void *ptr);
 to quickly get the count of elements in the pointer.
 
 ### TODO
-- [ ] Safer and better thread support   - [issue](https://github.com/Frityet/ManagedC/issues/1)
+- [x] Safer and better thread support   - [issue](https://github.com/Frityet/ManagedC/issues/1)
 - [ ] Fix for reallocation              - [issue](https://github.com/Frityet/ManagedC/issues/3)
 - [ ] Solution to circular references   - [issue](https://github.com/Frityet/ManagedC/issues/2)
 - [ ] Solution for MSVC/ISO-C           - [issue](https://github.com/Frityet/ManagedC/issues/4)

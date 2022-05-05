@@ -9,12 +9,14 @@
 
 #include "managed.h"
 
-typedef char *
-#if defined(MC_PREFIX_STRING)
-    MC_ADD_PREFIX(string);
-#   define string MC_ADD_PREFIX(string)
-#else
-    string;
+#if !defined(MC_NO_STRING)
+    typedef char *
+#   if defined(MC_PREFIX_STRING)
+       MC_ADD_PREFIX(string);
+#      define string MC_ADD_PREFIX(string)
+#   else
+       string;
+#   endif
 #endif
 
 #if !defined(MC_NO_MSTR_MACRO)
@@ -27,7 +29,7 @@ typedef char *
  * @param len Length of the string.
  * @return Managed pointer to the new string.
  */
-static inline string managed_string(const string str, int len)
+static inline string MC_ADD_PREFIX(managed_string)(const string str, int len)
 {
     //+1 for the null term
     string s = MC_ADD_PREFIX(alloc_managed)(len + 1, sizeof(char), NULL);
@@ -67,7 +69,7 @@ static inline string MC_ADD_PREFIX(mstrcat)(string dst, string src, int len)
  * @param len
  * @return
  */
-static inline string mstrcpy(string dst, string src, int len)
+static inline string MC_ADD_PREFIX(mstrcpy)(string dst, string src, int len)
 {
     string new = MC_ADD_PREFIX(realloc_managed)(dst, len);
     //Already logged
