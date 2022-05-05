@@ -38,7 +38,7 @@ TEST(refcount)
 
     {
         auto struct CustomStruct *custrct = mc_alloc_managed(sizeof(*custrct), 1, (void *)CustomStruct_free);
-        custrct->str = managed_string("Hello!", 6);
+        custrct->str = mc_managed_string("Hello!", 6);
         obj->sref = mc_reference(custrct);
         add_reference(obj, 10);
     }

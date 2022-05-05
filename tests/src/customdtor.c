@@ -27,6 +27,6 @@ TEST(customdtor)
 {
     auto struct MyStruct *obj = mc_alloc_managed(sizeof(*obj), 1, (void *)MyStruct_free);
     obj->num = 16;
-    obj->reference = managed_string("Hello", 5);
+    obj->reference = mc_managed_string("Hello", 5);
     return true;
 }

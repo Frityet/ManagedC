@@ -13,7 +13,8 @@ int main()
         EXTERN_TEST(refcount),
         EXTERN_TEST(list),
         EXTERN_TEST(ptrlist),
-        EXTERN_TEST(thread)
+        EXTERN_TEST(thread),
+        EXTERN_TEST(circularreference)
     };
     const int TESTC = TEST_COUNT;
 
