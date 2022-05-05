@@ -4,21 +4,22 @@ includes("../package.lua")
 
 local CFLAGS<const> = {
     "-Wall", "-Wextra", "-Werror",
-    sanitizers = "leak,undefined"
+    sanitizers = "address,leak,undefined"
 }
 
 local DEPENDENCIES<const> = {
-    "managedc"
+    "managedc",
+    "libuv"
 }
 
 add_requires(DEPENDENCIES)
-
-
 
 target("Example")
 do
     set_kind("binary")
     add_files("src/**.c")
+    add_headerfiles("src/**.h")
+    add_includedirs("src/", "src/include/")
     add_cflags(CFLAGS, "-fsanitize=" .. CFLAGS.sanitizers, "-fno-omit-frame-pointer")
     add_ldflags("-fsanitize=" .. CFLAGS.sanitizers)
 
