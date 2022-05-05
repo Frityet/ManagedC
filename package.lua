@@ -8,6 +8,7 @@ package("managedc")
     add_versions("1.1.1", "eb70de26ca4cc724efd14dc50ec9bc990ec92271")
     add_versions("1.1.2", "0068462307a1901a1b30410ae53721ca7e88cb10")
     add_versions("1.2.0", "65dadb723a557b1e295b2890e2eeac2c0e865880")
+    add_versions("1.2.1", "6c46b8b9764cabf7cf9c0a49e6ee7aa35039f4c1")
 
     on_install(function (package)
         local configs = {}
