@@ -1,6 +1,5 @@
 add_rules("mode.debug", "mode.release")
 
-
 target("ManagedC")
 do
     set_kind("headeronly")

@@ -603,22 +603,22 @@ struct MC_ADD_PREFIX(PointerMetadata) {
     /**
      * @brief Total size of the allocated data (without the size of the metadata).
      */
-    _Atomic unsigned int            total_size;
+    unsigned int    total_size;
 
     /**
      * @brief Amount elements in the data pointer.
      */
-    _Atomic unsigned int            count;
+    unsigned int    count;
 
     /**
      * @brief Size of the type represented in the data pointer.
      */
-    unsigned int                    typesize;
+    unsigned int    typesize;
 
     /**
      * @brief Count of references to this pointer.
      */
-    _Atomic unsigned int            reference_count;
+    unsigned int    reference_count;
 
     /**
      * @brief Callback to be executed on each element in the data pointer.
@@ -673,7 +673,11 @@ static inline void *nullable MC_ADD_PREFIX(reference)(void *nonnull ptr)
     if (mdata == NULL)
         return NULL;
     
-    mdata->reference_count++;
+        unsigned int old;
+    do {
+        old = __atomic_load_n(&mdata->reference_count, __ATOMIC_RELAXED);
+    } while (__atomic_compare_exchange_n(&mdata->reference_count, &old, old + 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
+
     return mdata->data;
 }
 
@@ -688,9 +692,10 @@ static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
 
     //We are freeing a pointer, so we can remove this reference and check if there is any other references.
-    mdata->reference_count--;
-    if (mdata->reference_count > 0)
-        return;
+    unsigned int old;
+    do {
+        old = __atomic_load_n(&mdata->reference_count, __ATOMIC_RELAXED);
+    } while (__atomic_compare_exchange_n(&mdata->reference_count, &old, old - 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
 
     if (mdata->on_free != NULL) {
         for (unsigned int i = 0; i < mdata->count; i++) {
@@ -730,16 +735,16 @@ static inline void *nullable MC_ADD_PREFIX(alloc_managed)(unsigned int size, uns
         return NULL;
     }
 
-    ptr->count          = ATOMIC_VAR_INIT(count);
+    ptr->count          = count;
     ptr->typesize       = size;
-    ptr->total_size     = ATOMIC_VAR_INIT(total_size);
+    ptr->total_size     = total_size;
     ptr->on_free        = on_free;
-    ptr->reference_count= ATOMIC_VAR_INIT(1);
+    ptr->reference_count= 1;
 
     //The address of the actual data is just after the metadata.
     //We add 1 instead of `sizeof(*ptr)` because adding onto a pointer
     //increases its address by the size of the type * the count to add.
-    ptr->data           = ptr + 1;
+    ptr->data = ptr + 1;
 
     return ptr->data;
 }
