@@ -8,4 +8,4 @@ do
 end
 target_end()
 
-includes("tests", "example")
+--includes("tests", "example")
