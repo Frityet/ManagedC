@@ -563,7 +563,7 @@
 #endif
 
 #if !defined(MC_NO_NEW) && !defined(new)
-#   define new(type, ...) (type *)memcpy(MC_ADD_PREFIX(alloc_managed), (type []) { __VA_ARGS__ }, sizeof(type))
+#   define new(type, ...) (type *)memcpy(MC_ADD_PREFIX(alloc_managed), &(type) __VA_ARGS__, sizeof(type))
 #endif
 
 #if defined(auto)
@@ -673,10 +673,10 @@ static inline void *nullable MC_ADD_PREFIX(reference)(void *nonnull ptr)
     if (mdata == NULL)
         return NULL;
     
-        unsigned int old;
+    unsigned int old;
     do {
         old = __atomic_load_n(&mdata->reference_count, __ATOMIC_RELAXED);
-    } while (__atomic_compare_exchange_n(&mdata->reference_count, &old, old + 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
+    } while (__atomic_compare_exchange_n(&mdata->reference_count, &old, old + 1, true, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
 
     return mdata->data;
 }
@@ -695,7 +695,7 @@ static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
     unsigned int old;
     do {
         old = __atomic_load_n(&mdata->reference_count, __ATOMIC_RELAXED);
-    } while (__atomic_compare_exchange_n(&mdata->reference_count, &old, old - 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
+    } while (__atomic_compare_exchange_n(&mdata->reference_count, &old, old - 1, true, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
 
     if (mdata->on_free != NULL) {
         for (unsigned int i = 0; i < mdata->count; i++) {

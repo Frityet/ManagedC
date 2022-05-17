@@ -8,6 +8,7 @@ struct MyStruct {
 
 TEST(new)
 {
+
     auto struct MyStruct *s = new(struct MyStruct, {
         .num = 10,
         .str = mc_managed_string("Whoop!", 6),
