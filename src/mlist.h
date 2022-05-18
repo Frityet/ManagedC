@@ -4,8 +4,17 @@
 
 #include "managed.h"
 
-#define MC_GET_ITEM(l, ...) *l[__VA_ARGS__]
-#define MC_LENGTHOF_LIST(l) MC_ADD_PREFIX(countof)(*l)
+#define MC_GET_ITEM(l, ...) *(l)[__VA_ARGS__]
+#define MC_LENGTHOF_LIST(...) MC_ADD_PREFIX(countof)(*(__VA_ARGS__))
+
+static inline void MC_ADD_PREFIX(free_list)(void ***ptr)
+{
+    struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(*ptr);
+
+    //Because the count of the list pointer is used for the count of used items on the list, we must set this to 0 to avoid a segfault
+    mdata->count = 0;
+    MC_ADD_PREFIX(free_managed)(*ptr);
+}
 
 //Because reallocation breaks references to a pointer, we must declare this as a double pointer
 static void **MC_ADD_PREFIX(new_list)(int typesize, int count, MC_ADD_PREFIX(FreePointer_f) *nullable free)
