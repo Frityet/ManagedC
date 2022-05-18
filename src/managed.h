@@ -563,10 +563,6 @@
 #   define ATTRIBUTE(...) __attribute__((__VA_ARGS__))
 #endif
 
-#if !defined(MC_NO_NEW) && !defined(new)
-#   define new(type, ...) (type *)memcpy(MC_ADD_PREFIX(alloc_managed), &(type) __VA_ARGS__, sizeof(type))
-#endif
-
 #if defined(auto)
 #   pragma push_macro("auto")
 #endif
@@ -583,6 +579,15 @@
 #   define nullable
 #   define nonnull
 #   define null_unspec
+#endif
+
+
+#if defined (__clang__) || defined (__GNUC__) && !defined (MC_CMPXCHG)
+#   define MC_CMPXCHG(ptr, expect, desired, success, failed) \
+        __atomic_compare_exchange_n (ptr, expect, desired, true, success, failed)
+
+#else
+#   error "MC_CMPXCHG not defined, are you using GCC or Clang?"
 #endif
 
 #if !defined(ref) || defined(MC_NO_REF)
@@ -672,7 +677,7 @@ static inline void *nullable MC_ADD_PREFIX(reference)(void *nonnull ptr)
     unsigned int old;
     do {
         old = __atomic_load_n(&mdata->reference_count, __ATOMIC_RELAXED);
-    } while (__atomic_compare_exchange_n(&mdata->reference_count, &old, old + 1, true, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
+    } while (MC_CMPXCHG(&mdata->reference_count, &old, old + 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
 
     return mdata->data;
 }
@@ -691,7 +696,7 @@ static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
     unsigned int old;
     do {
         old = __atomic_load_n(&mdata->reference_count, __ATOMIC_RELAXED);
-    } while (__atomic_compare_exchange_n(&mdata->reference_count, &old, old - 1, true, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
+    } while (MC_CMPXCHG(&mdata->reference_count, &old, old - 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
 
     if (mdata->on_free != NULL) {
         for (unsigned int i = 0; i < mdata->count; i++) {
@@ -746,35 +751,6 @@ static inline void *nullable MC_ADD_PREFIX(alloc_managed)(unsigned int size, uns
     return ptr->data;
 }
 
-#pragma region Clang specific
-///**
-// * @copydoc managed_alloc(unsigned int, unsigned int, FreePointer_f *nullable)
-// */
-//
-//overloadable static inline void *nullable managed_alloc(unsigned int size, unsigned int count)
-//{
-//    return managed_alloc(size, count, NULL);
-//}
-//
-///**
-// * @copydoc managed_alloc(unsigned int, unsigned int, FreePointer_f *nullable)
-// */
-//
-//overloadable static inline void *nullable managed_alloc(unsigned int size, FreePointer_f *nullable on_free)
-//{
-//    return managed_alloc(size, 1, on_free);
-//}
-//
-///**
-// * @copydoc managed_alloc(unsigned int, unsigned int, FreePointer_f *nullable)
-// */
-//
-//overloadable static inline void *nullable managed_alloc(unsigned int size)
-//{
-//    return managed_alloc(size, 1, NULL);
-//}
-#pragma endregion
-
 /**
  * @brief Reallocates a managed pointer.
  * @param ptr Managed pointer
@@ -797,7 +773,6 @@ static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, u
 
     //The rest of the fields are copied by `realloc`.
     newptr->count       = count;
-    newptr->total_size  = newsize;
     newptr->data        = newptr + 1;
 
     return newptr->data;
@@ -806,7 +781,7 @@ static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, u
 static inline void *nullable MC_ADD_PREFIX(clone)(void *nonnull ptr)
 {
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
-    void *new = MC_ADD_PREFIX(alloc_managed)(mdata->typesize, mdata->total_size, mdata->on_free);
+    void *new = MC_ADD_PREFIX(alloc_managed)(mdata->typesize, mdata->typesize * mdata->count, mdata->on_free);
 
     //In case the total size and the count aren't synced, we must manually correct it
     struct MC_ADD_PREFIX(PointerMetadata) *new_mdata = MC_ADD_PREFIX(metadataof)(ptr);
