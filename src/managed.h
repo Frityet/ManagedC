@@ -582,12 +582,16 @@
 #endif
 
 
-#if defined (__clang__) || defined (__GNUC__) && !defined (MC_CMPXCHG)
-#   define MC_CMPXCHG(ptr, expect, desired, success, failed) \
-        __atomic_compare_exchange_n (ptr, expect, desired, true, success, failed)
-
-#else
-#   error "MC_CMPXCHG not defined, are you using GCC or Clang?"
+#if !defined (MC_CMPXCHG)
+#   if defined (__CLANG__)
+#       define MC_CMPXCHG(ptr, expect, desired, success, failed) \
+            __atomic_compare_exchange_n (ptr, expect, desired, true, success, failed)
+#   elif defined (__GNUC__)
+#       define MC_CMPXCHG(ptr, expect, desired, success, failed) \
+            __atomic_compare_exchange_n (ptr, expect, desired, success, failed)
+#   else
+#       error "MC_CMPXCHG not defined, are you using GCC or Clang?"
+#   endif
 #endif
 
 #if !defined(ref) || defined(MC_NO_REF)
