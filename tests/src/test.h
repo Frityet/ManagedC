@@ -5,8 +5,11 @@
 
 #pragma once
 
+#include <stdarg.h>
+
 #include "logger.h"
 #include "mstring.h"
+#include "mlist.h"
 
 #include <errno.h>
 extern int errno;
@@ -25,10 +28,28 @@ typedef const struct Test {
 
 #define TEST_COUNT __COUNTER__
 
+static inline bool test_expr(bool expr, string strexpr, int line, string file, string func, string err, ...)
+{
+    if (expr) { 
+        LOG_SUCCESS("Expression \"%s\" succeeded!", strexpr);
+        return true;
+    } else {
+        char _LOG_buf[LOG_BUFFER_SIZE]; \
+        snprintf(_LOG_buf, LOG_BUFFER_SIZE, "Expression \"%s\" failed!\n\t- ", strexpr);
+        va_list l;
+        va_start(l, err);
+        vsnprintf(_LOG_buf, LOG_BUFFER_SIZE, err, l);
+        va_end(l);
+        logbase(LOG_TYPE_FATAL, _LOG_buf, line, file, func);
+
+        return false;
+    }
+}
+
 #define TEST_EXPR(expr, err, ...) ({\
-                                extern void exit(int);\
-                                if (expr) LOG_SUCCESS("Expression \"" STRMAC(expr) "\" succeeded!");\
-                                else { LOG_FATAL("Expression \"" STRMAC(expr) " failed!\n\t- " err __VA_OPT__(,) __VA_ARGS__); return false; }\
-                            })
+            int ln = __LINE__;\
+            string file = (string)__FILE__, func = (string)__PRETTY_FUNCTION__;\
+            test_expr((expr), STRMAC(expr), ln, file, func, err, __VA_ARGS__);\
+        })
 
 #define EXTERN_TEST(_name) ({ __COUNTER__; extern Test_t _name##_info; _name##_info; })

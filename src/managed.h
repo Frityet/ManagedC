@@ -512,7 +512,7 @@
 #include <stdatomic.h>
 #include <string.h>
 
-#if defined(__clang__)
+#if defined(__clang__) || defined (__llvm__)
 #   pragma clang assume_nonnull begin
 #endif
 
@@ -542,10 +542,10 @@
     /**
      * @brief C11 Bools suck massive balls, so this is competent.
      */
-    #ifdef __clang__
-    typedef enum Bool: _Bool { 
+    #if defined(__clang__) || defined (__llvm__)
+        typedef enum Bool: _Bool { 
     #else
-    typedef enum Bool { 
+        typedef enum Bool { 
     #endif
         true = (_Bool)1, false = (_Bool)0 
     } bool;
@@ -563,15 +563,15 @@
 #   define ATTRIBUTE(...) __attribute__((__VA_ARGS__))
 #endif
 
-#if defined(auto)
-#   pragma push_macro("auto")
-#endif
+#if !defined(auto) || !defined(MC_NO_AUTO) 
 /**
  *  @brief Automatically calls free_managed at the end of the scope.
  */
-#define auto    ATTRIBUTE(cleanup(MC_ADD_PREFIX(free_managed)))
+#   define auto    ATTRIBUTE(cleanup(MC_ADD_PREFIX(free_managed)))
+#endif
 
-#if !defined(MC_NO_NULLABLE) && defined(__clang__)
+
+#if !defined(MC_NO_NULLABLE) && (defined(__clang__) || defined (__llvm__))
 #   define nullable         _Nullable
 #   define nonnull          _Nonnull
 #   define null_unspec      _Null_unspecified
@@ -583,10 +583,10 @@
 
 
 #if !defined (MC_CMPXCHG)
-#   if defined (__CLANG__)
+#   if defined (__CLANG__) || defined (__llvm__)
 #       define MC_CMPXCHG(ptr, expect, desired, success, failed) \
             __atomic_compare_exchange_n (ptr, expect, desired, true, success, failed)
-#   elif defined (__GNUC__)
+#   elif defined (__GNUC__) && !defined(__llvm__) //Clang defines GNUC
 #       define MC_CMPXCHG(ptr, expect, desired, success, failed) \
             __atomic_compare_exchange_n (ptr, expect, desired, success, failed)
 #   else
@@ -787,21 +787,12 @@ static inline void *nullable MC_ADD_PREFIX(clone)(void *nonnull ptr)
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
     void *new = MC_ADD_PREFIX(alloc_managed)(mdata->typesize, mdata->typesize * mdata->count, mdata->on_free);
 
-    //In case the total size and the count aren't synced, we must manually correct it
-    struct MC_ADD_PREFIX(PointerMetadata) *new_mdata = MC_ADD_PREFIX(metadataof)(ptr);
-
     memcpy(new, ptr, mdata->typesize * mdata->count);
     return new;
 }
 
-#if defined(MC_NO_AUTO)
-#   undef auto
-#   pragma pop_macro("auto")
-#endif
-
-
 //#pragma pop_macro("MC_ADD_PREFIX")
 
-#if defined (__clang__)
+#if defined (__clang__) || defined (__llvm__)
 #   pragma clang assume_nonnull end
 #endif

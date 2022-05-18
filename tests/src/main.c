@@ -14,7 +14,7 @@ int main()
         EXTERN_TEST(list),
         EXTERN_TEST(ptrlist),
         EXTERN_TEST(thread),
-        EXTERN_TEST(circularreference)
+        // EXTERN_TEST(circularreference)
     };
     const int TESTC = TEST_COUNT;
 
@@ -23,7 +23,7 @@ int main()
     for (int i = 0; i < TESTC; i++) {
         Test_t test = TESTS[i];
 
-        LOG_INFO("Executing test %s (%d/%d)", test.name, i, TESTC);
+        LOG_INFO("Executing test \"%s\" (%d/%d)", test.name, i, TESTC);
         if (test.on_test()) 
             LOG_SUCCESS("{Test: \"%s\"} - Success!", test.name);
         else

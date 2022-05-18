@@ -7,21 +7,14 @@
 
 TEST(list)
 {
-    auto int *list = mc_alloc_managed(sizeof(*list), 10, NULL);
+    auto int **list = MC_NEW_LIST(int, 10, NULL);
+    TEST_EXPR(list != NULL, "Could not allocate! Reason: %s", strerror(errno));
 
-    for (int i = 0; i < 10; i++) {
-        list[i] = i;
+    for (int i = 0; i < 32; i++) {
+        MC_ADD_ITEM(list, i);
     }
 
-    int *new = mc_realloc_managed(list, 16);
-    TEST_EXPR(new != NULL, "Could not reallocate! Reason: %s", strerror(errno));
-    list = new;
-
-    for (int i = 10; i < 16; i++) {
-        list[i] = i;
-    }
-
-    TEST_EXPR(list[15] == 15, "Expected 15! Found %d", list[15]);
+    TEST_EXPR(MC_GET_ITEM(list, 15) == 15, "Expected 15! Found %d", MC_GET_ITEM(list, 15));
 
     return true;
 }
