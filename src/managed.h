@@ -510,8 +510,9 @@
 #pragma once
 #include <stdlib.h>
 #include <stdatomic.h>
+#include <string.h>
 
-#if defined(__clang__)
+#if defined(__clang__) || defined (__llvm__)
 #   pragma clang assume_nonnull begin
 #endif
 
@@ -541,10 +542,10 @@
     /**
      * @brief C11 Bools suck massive balls, so this is competent.
      */
-    #ifdef __clang__
-    typedef enum Bool: _Bool { 
+    #if defined(__clang__) || defined (__llvm__)
+        typedef enum Bool: _Bool { 
     #else
-    typedef enum Bool { 
+        typedef enum Bool { 
     #endif
         true = (_Bool)1, false = (_Bool)0 
     } bool;
@@ -562,19 +563,15 @@
 #   define ATTRIBUTE(...) __attribute__((__VA_ARGS__))
 #endif
 
-#if !defined(MC_NO_NEW) && !defined(new)
-#   define new(type, ...) (type *)memcpy(MC_ADD_PREFIX(alloc_managed), (type []) { __VA_ARGS__ }, sizeof(type))
-#endif
-
-#if defined(auto)
-#   pragma push_macro("auto")
-#endif
+#if !defined(auto) || !defined(MC_NO_AUTO) 
 /**
  *  @brief Automatically calls free_managed at the end of the scope.
  */
-#define auto    ATTRIBUTE(cleanup(MC_ADD_PREFIX(free_managed)))
+#   define auto    ATTRIBUTE(cleanup(MC_ADD_PREFIX(free_managed)))
+#endif
 
-#if !defined(MC_NO_NULLABLE) && defined(__clang__)
+
+#if !defined(MC_NO_NULLABLE) && (defined(__clang__) || defined (__llvm__))
 #   define nullable         _Nullable
 #   define nonnull          _Nonnull
 #   define null_unspec      _Null_unspecified
@@ -582,6 +579,19 @@
 #   define nullable
 #   define nonnull
 #   define null_unspec
+#endif
+
+
+#if !defined (MC_CMPXCHG)
+#   if defined (__CLANG__) || defined (__llvm__)
+#       define MC_CMPXCHG(ptr, expect, desired, success, failed) \
+            __atomic_compare_exchange_n (ptr, expect, desired, true, success, failed)
+#   elif defined (__GNUC__) && !defined(__llvm__) //Clang defines GNUC
+#       define MC_CMPXCHG(ptr, expect, desired, success, failed) \
+            __atomic_compare_exchange_n (ptr, expect, desired, success, failed)
+#   else
+#       error "MC_CMPXCHG not defined, are you using GCC or Clang?"
+#   endif
 #endif
 
 #if !defined(ref) || defined(MC_NO_REF)
@@ -600,11 +610,6 @@ typedef void MC_ADD_PREFIX(FreePointer_f)(const void *nonnull);
  * @brief Metadata about a managed pointer.
  */
 struct MC_ADD_PREFIX(PointerMetadata) {
-    /**
-     * @brief Total size of the allocated data (without the size of the metadata).
-     */
-    unsigned int    total_size;
-
     /**
      * @brief Amount elements in the data pointer.
      */
@@ -673,10 +678,10 @@ static inline void *nullable MC_ADD_PREFIX(reference)(void *nonnull ptr)
     if (mdata == NULL)
         return NULL;
     
-        unsigned int old;
+    unsigned int old;
     do {
         old = __atomic_load_n(&mdata->reference_count, __ATOMIC_RELAXED);
-    } while (__atomic_compare_exchange_n(&mdata->reference_count, &old, old + 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
+    } while (MC_CMPXCHG(&mdata->reference_count, &old, old + 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
 
     return mdata->data;
 }
@@ -695,7 +700,7 @@ static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
     unsigned int old;
     do {
         old = __atomic_load_n(&mdata->reference_count, __ATOMIC_RELAXED);
-    } while (__atomic_compare_exchange_n(&mdata->reference_count, &old, old - 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
+    } while (MC_CMPXCHG(&mdata->reference_count, &old, old - 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
 
     if (mdata->on_free != NULL) {
         for (unsigned int i = 0; i < mdata->count; i++) {
@@ -735,11 +740,12 @@ static inline void *nullable MC_ADD_PREFIX(alloc_managed)(unsigned int size, uns
         return NULL;
     }
 
-    ptr->count          = count;
-    ptr->typesize       = size;
-    ptr->total_size     = total_size;
-    ptr->on_free        = on_free;
-    ptr->reference_count= 1;
+    *ptr = (struct MC_ADD_PREFIX(PointerMetadata)){
+        .count          = 0,
+        .typesize       = size,
+        .on_free        = on_free,
+        .reference_count= 1
+    };
 
     //The address of the actual data is just after the metadata.
     //We add 1 instead of `sizeof(*ptr)` because adding onto a pointer
@@ -748,35 +754,6 @@ static inline void *nullable MC_ADD_PREFIX(alloc_managed)(unsigned int size, uns
 
     return ptr->data;
 }
-
-#pragma region Clang specific
-///**
-// * @copydoc managed_alloc(unsigned int, unsigned int, FreePointer_f *nullable)
-// */
-//
-//overloadable static inline void *nullable managed_alloc(unsigned int size, unsigned int count)
-//{
-//    return managed_alloc(size, count, NULL);
-//}
-//
-///**
-// * @copydoc managed_alloc(unsigned int, unsigned int, FreePointer_f *nullable)
-// */
-//
-//overloadable static inline void *nullable managed_alloc(unsigned int size, FreePointer_f *nullable on_free)
-//{
-//    return managed_alloc(size, 1, on_free);
-//}
-//
-///**
-// * @copydoc managed_alloc(unsigned int, unsigned int, FreePointer_f *nullable)
-// */
-//
-//overloadable static inline void *nullable managed_alloc(unsigned int size)
-//{
-//    return managed_alloc(size, 1, NULL);
-//}
-#pragma endregion
 
 /**
  * @brief Reallocates a managed pointer.
@@ -800,20 +777,22 @@ static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, u
 
     //The rest of the fields are copied by `realloc`.
     newptr->count       = count;
-    newptr->total_size  = newsize;
     newptr->data        = newptr + 1;
 
     return newptr->data;
 }
 
-#if defined(MC_NO_AUTO)
-#   undef auto
-#   pragma pop_macro("auto")
-#endif
+static inline void *nullable MC_ADD_PREFIX(clone)(void *nonnull ptr)
+{
+    struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
+    void *new = MC_ADD_PREFIX(alloc_managed)(mdata->typesize, mdata->typesize * mdata->count, mdata->on_free);
 
+    memcpy(new, ptr, mdata->typesize * mdata->count);
+    return new;
+}
 
 //#pragma pop_macro("MC_ADD_PREFIX")
 
-#if defined (__clang__)
+#if defined (__clang__) || defined (__llvm__)
 #   pragma clang assume_nonnull end
 #endif

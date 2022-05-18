@@ -5,6 +5,8 @@ local CFLAGS<const> = {
     sanitizers = "address,leak,undefined"
 }
 
+set_languages("gnu17")
+
 target("Test")
 do
     set_kind("binary")
