@@ -9,7 +9,7 @@
 
 #include "logger.h"
 #include "mstring.h"
-#include "mlist.h"
+// #include "mlist.h"
 
 #include <errno.h>
 extern int errno;
@@ -28,6 +28,7 @@ typedef const struct Test {
 
 #define TEST_COUNT __COUNTER__
 
+ATTRIBUTE(used)
 static inline bool test_expr(bool expr, string strexpr, int line, string file, string func, string err, ...)
 {
     if (expr) { 
