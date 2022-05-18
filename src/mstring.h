@@ -50,16 +50,16 @@ static inline string MC_ADD_PREFIX(managed_string)(const string str, int len)
  */
 static inline string MC_ADD_PREFIX(mstrcat)(string dst, string src, int len)
 {
-    int oldlen = MC_ADD_PREFIX(metadataof)(dst)->count;
-    string new = MC_ADD_PREFIX(realloc_managed)(dst, oldlen + len + 1);
-
+    int oldlen = MC_ADD_PREFIX(countof)(dst);
+    string new = MC_ADD_PREFIX(realloc_managed)(dst, oldlen + len);
     if (new == NULL)
         return NULL;
+    dst = new;
+    
+    memcpy(dst + (oldlen - 1), src, len);
+    dst[len + oldlen] = '\0';
 
-    //-1 because new has a NULL terminator
-    strncpy(new + oldlen - 1, src, len);
-
-    return new;
+    return dst;
 }
 
 /**
@@ -75,10 +75,11 @@ static inline string MC_ADD_PREFIX(mstrcpy)(string dst, string src, int len)
     //Already logged
     if (new == NULL)
         return NULL;
+    dst = new;
 
-    memcpy(new, src, len);
+    memcpy(dst, src, len);
 
-    return new;
+    return dst;
 }
 
 #if defined(MC_PREFIX_STRING)

@@ -510,6 +510,7 @@
 #pragma once
 #include <stdlib.h>
 #include <stdatomic.h>
+#include <string.h>
 
 #if defined(__clang__)
 #   pragma clang assume_nonnull begin
@@ -600,11 +601,6 @@ typedef void MC_ADD_PREFIX(FreePointer_f)(const void *nonnull);
  * @brief Metadata about a managed pointer.
  */
 struct MC_ADD_PREFIX(PointerMetadata) {
-    /**
-     * @brief Total size of the allocated data (without the size of the metadata).
-     */
-    unsigned int    total_size;
-
     /**
      * @brief Amount elements in the data pointer.
      */
@@ -735,11 +731,12 @@ static inline void *nullable MC_ADD_PREFIX(alloc_managed)(unsigned int size, uns
         return NULL;
     }
 
-    ptr->count          = count;
-    ptr->typesize       = size;
-    ptr->total_size     = total_size;
-    ptr->on_free        = on_free;
-    ptr->reference_count= 1;
+    *ptr = (struct MC_ADD_PREFIX(PointerMetadata)){
+        .count          = 0,
+        .typesize       = size,
+        .on_free        = on_free,
+        .reference_count= 1
+    };
 
     //The address of the actual data is just after the metadata.
     //We add 1 instead of `sizeof(*ptr)` because adding onto a pointer
@@ -804,6 +801,18 @@ static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, u
     newptr->data        = newptr + 1;
 
     return newptr->data;
+}
+
+static inline void *nullable MC_ADD_PREFIX(clone)(void *nonnull ptr)
+{
+    struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
+    void *new = MC_ADD_PREFIX(alloc_managed)(mdata->typesize, mdata->total_size, mdata->on_free);
+
+    //In case the total size and the count aren't synced, we must manually correct it
+    struct MC_ADD_PREFIX(PointerMetadata) *new_mdata = MC_ADD_PREFIX(metadataof)(ptr);
+
+    memcpy(new, ptr, mdata->typesize * mdata->count);
+    return new;
 }
 
 #if defined(MC_NO_AUTO)

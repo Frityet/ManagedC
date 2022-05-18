@@ -4,13 +4,16 @@
 
 #include "managed.h"
 
-#define MC_INDEX_LIST(list, i) *list[i]
+#define MC_GET_ITEM(l, ...) *l[__VA_ARGS__]
+#define MC_LENGTHOF_LIST(l) MC_ADD_PREFIX(countof)(*l)
 
 //Because reallocation breaks references to a pointer, we must declare this as a double pointer
 static void **MC_ADD_PREFIX(new_list)(int typesize, int count, MC_ADD_PREFIX(FreePointer_f) *nullable free)
 {
+    //The count **must** be even for growing to woek
     count = count < 2 ? 2 : count;
-
+    
+    //We must have a double pointer for thread and reference safe adding and deletion
     void    **listptr = (void **)MC_ADD_PREFIX(alloc_managed)(sizeof(void **), 1, MC_ADD_PREFIX(free_managed)),
             *alloc = MC_ADD_PREFIX(alloc_managed)(typesize, count, free);
     
@@ -49,12 +52,12 @@ static void MC_ADD_PREFIX(remove_from_list)(void **list, int index)
     memcpy(*list + index - 1, *list + index, mdata->typesize * (mdata->count - index));
 }
 
-static void MC_ADD_PREFIX(purge_from_list)(void **list, int count, int indexes[static count])
+static void *MC_ADD_PREFIX(list_toarray)(void **list)
 {
-    int newlist[count];
-    for (int i = 0; i < count; i++) {
+    struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(*list);
+    void *alloc = MC_ADD_PREFIX(alloc_managed)(mdata->typesize, mdata->count, mdata->on_free);
 
-    }
+    memcpy(alloc, *list, mdata->typesize * mdata->count);
 
+    return alloc;
 }
-
