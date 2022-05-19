@@ -1,4 +1,5 @@
 package("managedc")
+do
     set_kind("library", { headeronly = true })
     set_description("Reference counter garabage collection for C")
 
@@ -22,4 +23,5 @@ package("managedc")
          assert(package:has_cfuncs("mc_alloc_managed", { includes = "managed.h" }))
          assert(package:has_cfuncs("mc_managed_string", { includes = "mstring.h" }))
     end)
+end
 package_end()
