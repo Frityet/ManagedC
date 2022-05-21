@@ -513,10 +513,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-#if defined(__clang__) || defined (__llvm__)
-#   pragma clang assume_nonnull begin
-#endif
-
 #if !defined(EVAL)
 #   define EVAL(x) x
 #endif
@@ -615,6 +611,7 @@ struct MC_ADD_PREFIX(PointerMetadata) {
  * @return struct MC_ADD_PREFIX(PointerMetadata)
  * @refitem Metadata of the pointer.
  */
+ATTRIBUTE(used)
 static inline struct MC_ADD_PREFIX(PointerMetadata) *nullable MC_ADD_PREFIX(metadataof)(void *nonnull ptr)
 {
     if (ptr == NULL) return NULL;
@@ -631,6 +628,7 @@ static inline struct MC_ADD_PREFIX(PointerMetadata) *nullable MC_ADD_PREFIX(meta
  * @param ptr Managed pointer
  * @return Count of items in the pointer.
  */
+ATTRIBUTE(used)
 static inline int MC_ADD_PREFIX(countof)(void *nonnull ptr)
 {
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
@@ -645,6 +643,7 @@ static inline int MC_ADD_PREFIX(countof)(void *nonnull ptr)
  * @param ptr Managed pointer.
  * @return ptr
  */
+ATTRIBUTE(used)
 static inline void *nullable MC_ADD_PREFIX(reference)(void *nonnull ptr)
 {
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
@@ -663,7 +662,7 @@ static inline void *nullable MC_ADD_PREFIX(reference)(void *nonnull ptr)
  * @brief Frees a managed pointer.
  * @param ref Pointer to the managed pointer (double pointer).
  */
-
+ATTRIBUTE(used)
 static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
 {
     void *ptr = *((void **)ref);
@@ -698,6 +697,7 @@ static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
  * @brief Releases the resources behind a managed pointer.
  * @param ref Managed pointer
  */
+ATTRIBUTE(used)
 static inline void MC_ADD_PREFIX(release)(const void *nonnull ref)
 { MC_ADD_PREFIX(free_managed)(&ref); }
 
@@ -709,6 +709,7 @@ static inline void MC_ADD_PREFIX(release)(const void *nonnull ref)
  * @param on_free Callback to be executed on free.
  * @return Managed pointer, or @c NULL if unable to allocate.
  */
+ATTRIBUTE(used)
 ATTRIBUTE(warn_unused_result("This function returns a new allocated pointer on success, you must use the return value!"))
 static inline void *nullable MC_ADD_PREFIX(alloc_managed)(unsigned int size, unsigned int count, MC_ADD_PREFIX(FreePointer_f) *nullable on_free)
 {
@@ -742,26 +743,32 @@ static inline void *nullable MC_ADD_PREFIX(alloc_managed)(unsigned int size, uns
  * @return Pointer to the resized block of memory, or NULL if it could not reallocate.
  * @remarks This function works just as the realloc function, on success, the parametre @c ptr is freed.
  */
+ATTRIBUTE(used)
 ATTRIBUTE(warn_unused_result("This function returns the new reallocated pointer on success, you must use the return value!"))
 static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, unsigned int count)
 {
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
     size_t  size     = mdata->typesize,
+            oldcount = mdata->count,
             newsize  = size * count;
 
 
     struct MC_ADD_PREFIX(PointerMetadata) *newptr = realloc(mdata, sizeof(struct MC_ADD_PREFIX(PointerMetadata)) + newsize);
-    if (newptr == NULL) {
+    if (newptr == NULL) 
         return NULL;
-    }
+    
 
     //The rest of the fields are copied by `realloc`.
-    newptr->count       = count;
-    newptr->data        = newptr + 1;
+    newptr->count   = count;
+    newptr->data    = newptr + 1;
+
+     if (oldcount < count)
+        memset(newptr->data + (size * oldcount), 0, size * (count - oldcount));
 
     return newptr->data;
 }
 
+ATTRIBUTE(used)
 static inline void *nullable MC_ADD_PREFIX(clone)(void *nonnull ptr)
 {
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
@@ -770,9 +777,3 @@ static inline void *nullable MC_ADD_PREFIX(clone)(void *nonnull ptr)
     memcpy(new, ptr, mdata->typesize * mdata->count);
     return new;
 }
-
-//#pragma pop_macro("MC_ADD_PREFIX")
-
-#if defined (__clang__) || defined (__llvm__)
-#   pragma clang assume_nonnull end
-#endif

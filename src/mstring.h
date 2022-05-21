@@ -19,7 +19,7 @@
 #   endif
 #endif
 
-#if !defined(MC_NO_MSTR_MACRO)
+#if !defined(MC_NO_MSTR_MACRO) && !defined(mstr)
 #   define mstr(str) managed_string(str, strlen(str))
 #endif
 
@@ -33,7 +33,7 @@ ATTRIBUTE(used)
 static inline string MC_ADD_PREFIX(managed_string)(const string str, int len)
 {
     //+1 for the null term
-    string s = MC_ADD_PREFIX(alloc_managed)(len + 1, sizeof(char), NULL);
+    string s = MC_ADD_PREFIX(alloc_managed)(sizeof(char), len + 1, NULL);
 
     strncpy(s, str, len);
 
@@ -69,20 +69,30 @@ static inline string MC_ADD_PREFIX(mstrcat)(string dst, string src, int len)
  * @param dst
  * @param src
  * @param len
+ * @remark This will free the dst string, and return a new, copied, string.
  * @return
  */
 ATTRIBUTE(used)
 static inline string MC_ADD_PREFIX(mstrcpy)(string dst, string src, int len)
 {
-    string new = MC_ADD_PREFIX(realloc_managed)(dst, len);
-    //Already logged
-    if (new == NULL)
-        return NULL;
-    dst = new;
+    string new = mc_realloc_managed(dst, len);
+    if (new == NULL) return NULL;
 
-    memcpy(dst, src, len);
+    memcpy(new, src, len);
+    new[len] = '\0';
 
-    return dst;
+    return new;
+}
+
+ATTRIBUTE(used)
+static inline bool MC_ADD_PREFIX(mstrcmp)(string s1, string s2, int len)
+{
+    bool eq = true;
+    size_t c = MC_ADD_PREFIX(countof)(s1);
+    for (size_t i = 0; i < c && i < (size_t)len; i++) 
+        if (!(eq = s1[i] == s2[i]))
+            break;
+    return eq;
 }
 
 #if defined(MC_PREFIX_STRING)
