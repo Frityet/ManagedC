@@ -702,6 +702,9 @@ static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
         old = __atomic_load_n(&mdata->reference_count, __ATOMIC_RELAXED);
     } while (MC_CMPXCHG(&mdata->reference_count, &old, old - 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
 
+    if (mdata->reference_count > 0)
+        return;
+
     if (mdata->on_free != NULL) {
         for (unsigned int i = 0; i < mdata->count; i++) {
             //Call the metadata's "on_free" method for every item in the pointer.
