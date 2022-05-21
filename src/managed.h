@@ -510,6 +510,7 @@
 #pragma once
 #include <stdlib.h>
 #include <stdatomic.h>
+#include <stdbool.h>
 #include <string.h>
 
 #if defined(__clang__) || defined (__llvm__)
@@ -523,34 +524,6 @@
 #if !defined(CONCAT)
 #   define X_CONCAT(x, y) x##y
 #   define CONCAT(x, y) X_CONCAT(x, y)
-#endif
-
-#if !defined(MC_NO_BOOLS)
-
-//libX11 decides to be a lil bitch and define every symbol (including types and macros) in PascalCase. This results in
-//some random ass macros being defined, such as Bool.
-#   if defined (Bool)
-#       undef Bool
-#   endif
-
-#   if defined (bool)
-#       undef bool
-#       undef true
-#       undef false
-#   endif
-
-    /**
-     * @brief C11 Bools suck massive balls, so this is competent.
-     */
-    #if defined(__clang__) || defined (__llvm__)
-        typedef enum Bool: _Bool { 
-    #else
-        typedef enum Bool { 
-    #endif
-        true = (_Bool)1, false = (_Bool)0 
-    } bool;
-#else
-#   include <stdbool.h>
 #endif
 
 #if !defined(MC_PREFIX)
@@ -695,6 +668,10 @@ static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
 {
     void *ptr = *((void **)ref);
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
+
+    //TODO: Find better solution?
+    if (mdata == NULL)
+        return;
 
     //We are freeing a pointer, so we can remove this reference and check if there is any other references.
     unsigned int old;
