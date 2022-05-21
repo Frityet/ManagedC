@@ -741,7 +741,7 @@ static inline void *nullable MC_ADD_PREFIX(alloc_managed)(unsigned int size, uns
     }
 
     *ptr = (struct MC_ADD_PREFIX(PointerMetadata)){
-        .count          = 0,
+        .count          = count,
         .typesize       = size,
         .on_free        = on_free,
         .reference_count= 1

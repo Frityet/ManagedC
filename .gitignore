@@ -13,3 +13,6 @@ compile_commands.json
 .clangd/
 
 pdf/
+
+*.DS_Store
+.DS_Store
