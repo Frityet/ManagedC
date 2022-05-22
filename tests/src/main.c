@@ -11,10 +11,7 @@ int main()
         EXTERN_TEST(variable),
         EXTERN_TEST(customdtor),
         EXTERN_TEST(refcount),
-        EXTERN_TEST(list),
-        EXTERN_TEST(ptrlist),
-        EXTERN_TEST(thread),
-        // EXTERN_TEST(circularreference)
+        EXTERN_TEST(ptrlist)
     };
     const int TESTC = TEST_COUNT;
 

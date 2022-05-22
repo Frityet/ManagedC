@@ -12,13 +12,12 @@ struct MyStruct {
 
 static void MyStruct_free(struct MyStruct *mystruct)
 {
-#ifdef __clang__
-    (^bool(void) {
-        TEST_EXPR(mystruct->num == 16, "Expected value to be 16 (got %d!)", mystruct->num);
-        TEST_EXPR(strncmp(mystruct->reference, "Hello", mc_countof(mystruct->reference)) == 0, "Expected \"Hello\", (got %s)", mystruct->reference);
-        return true;
-    })();
-#endif
+    if (!TEST_EXPR(mystruct->num == 16, "Expected value to be 16 (got %d!)", mystruct->num))
+        exit(EXIT_FAILURE);
+
+    if (!TEST_EXPR(strncmp(mystruct->reference, "Hello", mc_countof(mystruct->reference)) == 0, "Expected \"Hello\", (got %s)", mystruct->reference))
+        exit(EXIT_FAILURE);
+
 
     mc_release(mystruct->reference);
 }
