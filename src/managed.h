@@ -552,14 +552,15 @@
 
 
 #if !defined (MC_CMPXCHG)
-#   if defined (__CLANG__) || defined (__llvm__)
-#       define MC_CMPXCHG(ptr, expect, desired, success, failed) \
-            __atomic_compare_exchange_n (ptr, expect, desired, true, success, failed)
-#   elif defined (__GNUC__) && !defined(__llvm__) //Clang defines GNUC
-#       define MC_CMPXCHG(ptr, expect, desired, success, failed) \
-            __atomic_compare_exchange_n (ptr, expect, desired, success, failed)
+#   define MC_CMPXCHG(ptr, expect, desired, success, failed) \
+        __atomic_compare_exchange_n (ptr, expect, desired, true, success, failed)
+#endif
+
+#if !defined (MC_WARN_RES)
+#   if defined (__clang__) || defined(__llvm__)
+#       define MC_WARN_RES(...) __attribute__((warn_unused_result(__VA_ARGS__)))
 #   else
-#       error "MC_CMPXCHG not defined, are you using GCC or Clang?"
+#       define MC_WARN_RES(...) __attribute__((warn_unused_result))
 #   endif
 #endif
 
@@ -710,7 +711,7 @@ static inline void MC_ADD_PREFIX(release)(const void *nonnull ref)
  * @return Managed pointer, or @c NULL if unable to allocate.
  */
 ATTRIBUTE(used)
-ATTRIBUTE(warn_unused_result("This function returns a new allocated pointer on success, you must use the return value!"))
+MC_WARN_RES("This function returns a new allocated pointer on success, you must use the return value!")
 static inline void *nullable MC_ADD_PREFIX(alloc_managed)(unsigned int size, unsigned int count, MC_ADD_PREFIX(FreePointer_f) *nullable on_free)
 {
     size_t total_size = count * size;
@@ -744,7 +745,7 @@ static inline void *nullable MC_ADD_PREFIX(alloc_managed)(unsigned int size, uns
  * @remarks This function works just as the realloc function, on success, the parametre @c ptr is freed.
  */
 ATTRIBUTE(used)
-ATTRIBUTE(warn_unused_result("This function returns the new reallocated pointer on success, you must use the return value!"))
+MC_WARN_RES("This function returns the new reallocated pointer on success, you must use the return value!")
 static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, unsigned int count)
 {
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);

@@ -53,4 +53,4 @@ static inline bool test_expr(bool expr, string strexpr, int line, string file, s
             test_expr((expr), STRMAC(expr), ln, file, func, err, __VA_ARGS__);\
         })
 
-#define EXTERN_TEST(_name) ({ __COUNTER__; extern Test_t _name##_info; _name##_info; })
+#define EXTERN_TEST(_name) ({ (void)__COUNTER__; extern Test_t _name##_info; _name##_info; })
