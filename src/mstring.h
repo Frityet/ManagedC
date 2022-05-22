@@ -35,7 +35,8 @@ static inline string MC_ADD_PREFIX(managed_string)(const string str, int len)
     //+1 for the null term
     string s = MC_ADD_PREFIX(alloc_managed)(sizeof(char), len + 1, NULL);
 
-    strncpy(s, str, len);
+    memcpy(s, str, len);
+    s[len] = '\0';
 
     return s;
 }
@@ -50,18 +51,18 @@ static inline string MC_ADD_PREFIX(managed_string)(const string str, int len)
  * allocates a new object, and returns it.
  */
 ATTRIBUTE(used)
-static inline string MC_ADD_PREFIX(mstrcat)(string dst, string src, int len)
+static inline string MC_ADD_PREFIX(mstrcat)(string *dst, string src, int len)
 {
-    int oldlen = MC_ADD_PREFIX(countof)(dst);
-    string new = MC_ADD_PREFIX(realloc_managed)(dst, oldlen + len);
+    int oldlen = MC_ADD_PREFIX(countof)(*dst);
+    string new = MC_ADD_PREFIX(realloc_managed)(*dst, oldlen + len + 1);
     if (new == NULL)
         return NULL;
-    dst = new;
-    
-    memcpy(dst + (oldlen - 1), src, len);
-    dst[len + oldlen] = '\0';
 
-    return dst;
+    memcpy(new + oldlen, src, len);
+    new[oldlen + len] = '\0';
+
+    *dst = new;
+    return *dst;
 }
 
 /**
@@ -73,14 +74,15 @@ static inline string MC_ADD_PREFIX(mstrcat)(string dst, string src, int len)
  * @return
  */
 ATTRIBUTE(used)
-static inline string MC_ADD_PREFIX(mstrcpy)(string dst, string src, int len)
+static inline string MC_ADD_PREFIX(mstrcpy)(string *dst, string src, int len)
 {
-    string new = mc_realloc_managed(dst, len);
+    string new = mc_realloc_managed(*dst, len + 1);
     if (new == NULL) return NULL;
 
     memcpy(new, src, len);
     new[len] = '\0';
 
+    *dst = new;
     return new;
 }
 
@@ -89,9 +91,10 @@ static inline bool MC_ADD_PREFIX(mstrcmp)(string s1, string s2, int len)
 {
     bool eq = true;
     size_t c = MC_ADD_PREFIX(countof)(s1);
-    for (size_t i = 0; i < c && i < (size_t)len; i++) 
-        if (!(eq = s1[i] == s2[i]))
-            break;
+    for (size_t i = 0; i < c && i < (size_t)len; i++) {
+        eq = s1[i] == s2[i];
+        if (!eq) break;
+    }
     return eq;
 }
 
