@@ -158,3 +158,4 @@ to quickly get the count of elements in the pointer.
 - [X] Solution to circular references   - [issue](https://github.com/Frityet/ManagedC/issues/2)
 - [ ] Solution for MSVC/ISO-C           - [issue](https://github.com/Frityet/ManagedC/issues/4)
 - [X] Easier/standardized referencing   - [issue](https://github.com/Frityet/ManagedC/issues/5)
+- [ ] Datastructures                    - [issue](https://github.com/Frityet/ManagedC/issues/8)
