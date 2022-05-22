@@ -14,11 +14,12 @@ extern int errno;
 TEST(variable)
 {
     auto int *num = mc_alloc_managed(sizeof(int), 1, NULL);
-    if (!TEST_EXPR(num != NULL, "Could not allocate! Reason: %s", strerror(errno)))
-        return false;
+    ASRT_EXPR(num != NULL, "Could not allocate! Reason: %s", strerror(errno));
+
     *num = 4;
-    if (!TEST_EXPR(*num == 4, "Could not set value!, error: %s", strerror(errno)))
-        return false;
+
+    ASRT_EXPR(*num == 4, "Could not set value!, error: %s", strerror(errno));
+
 
     return true;
 }

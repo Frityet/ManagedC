@@ -9,7 +9,6 @@
 
 #include "logger.h"
 #include "mstring.h"
-// #include "mlist.h"
 
 #include <errno.h>
 extern int errno;
@@ -54,7 +53,7 @@ static inline bool test_expr(bool expr, string strexpr, int line, string file, s
     }
 }
 
-#define TEST_EXPR(expr, err, ...) test_expr((expr), STRMAC(expr), __LINE__, __FILE__, (char *)__PRETTY_FUNCTION__, err, __VA_ARGS__)\
-        
+#define TEST_EXPR(expr, err, ...) test_expr((expr), STRMAC(expr), __LINE__, __FILE__, (char *)__PRETTY_FUNCTION__, err, __VA_ARGS__)
+#define ASRT_EXPR(expr, err, ...) ({ if (!TEST_EXPR(expr, err, __VA_ARGS__)) return false; else return true; })
 
 #define EXTERN_TEST(_name) ({ (void)__COUNTER__; extern Test_t _name##_info; _name##_info; })

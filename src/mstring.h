@@ -20,7 +20,7 @@
 #endif
 
 #if !defined(MC_NO_MSTR_MACRO) && !defined(mstr)
-#   define mstr(str) managed_string(str, strlen(str))
+#   define mstr(str) MC_ADD_PREFIX(managed_string)(str, strlen(str))
 #endif
 
 /**

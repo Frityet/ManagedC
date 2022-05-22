@@ -43,11 +43,9 @@ TEST(refcount)
         add_reference(obj, 10);
     }
 
-    if (!TEST_EXPR(strncmp(obj->sref->str, "Hello!", mc_countof(obj->sref)) == 0, "Sref str: %s", obj->sref->str))
-        return false;
-        
-    if (!TEST_EXPR(*obj->intref == 10, "Intref: %d", *obj->intref))
-        return false;
+    ASRT_EXPR(strncmp(obj->sref->str, "Hello!", mc_countof(obj->sref)) == 0, "Sref str: %s", obj->sref->str);
+
+    ASRT_EXPR(*obj->intref == 10, "Intref: %d", *obj->intref);
 
     return true;
 }
