@@ -2,6 +2,11 @@
 
 Library to add a reference-counter GC to C. See `tests/src/` for examples
 
+> |ℹ️ Note ℹ️        |
+> |-----------------|
+> | This library is exclusively available on GCC and Clang due to the "`__attribute__((cleanup))`" extension! |    
+
+
 ## Installation
 
 Using [xmake](https://xmake.io) you can easily use this library by including this package declaration in your `xmake.lua`: [package.lua](package.lua)
