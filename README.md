@@ -86,8 +86,8 @@ int main()
     alloc_list[3] = mc_alloc_managed(sizeof(int), 1, NULL);
     *alloc_list[3] = 8;
     
-    alloc_list[3] = mc_alloc_managed(sizeof(int), 1, NULL);
-    *alloc_list[3] = 7;
+    alloc_list[4] = mc_alloc_managed(sizeof(int), 1, NULL);
+    *alloc_list[4] = 7;
     
     //All allocated at the end of the scope!
 }
@@ -129,7 +129,7 @@ int main()
     {
         auto int *list = func_that_allocs();
         *list = 10;
-        refarray[len] = mc_reference(list); //Will not be deallocateed because we got a reference
+        refarray[len++] = mc_reference(list); //Will not be deallocateed because we got a reference
     }
     //all deallocated at the end of the list
 }
