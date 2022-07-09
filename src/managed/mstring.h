@@ -20,7 +20,7 @@
  * @return Managed pointer to the new string.
  */
 ATTRIBUTE(used)
-static inline char *nullable MC_ADD_PREFIX(managed_string)(const char *nonnull str, int len)
+static inline char *nullable MC_ADD_PREFIX(managed_string)(const char *nonnull str, size_t len)
 {
     //+1 for the null term
     char *s = MC_ADD_PREFIX(alloc_managed)(sizeof(char), len + 1, NULL);
@@ -43,7 +43,7 @@ static inline char *nullable MC_ADD_PREFIX(managed_string)(const char *nonnull s
  * allocates a new object, and returns it.
  */
 ATTRIBUTE(used)
-static inline char *MC_ADD_PREFIX(mstrcat)(char **dst, char *src, int len)
+static inline char *MC_ADD_PREFIX(mstrcat)(char **dst, char *src, size_t len)
 {
     int oldlen = MC_ADD_PREFIX(countof)(*dst);
     char *new = MC_ADD_PREFIX(realloc_managed)(*dst, oldlen + len + 1);
@@ -66,7 +66,7 @@ static inline char *MC_ADD_PREFIX(mstrcat)(char **dst, char *src, int len)
  * @return
  */
 ATTRIBUTE(used)
-static inline char *MC_ADD_PREFIX(mstrcpy)(char **dst, char *src, int len)
+static inline char *MC_ADD_PREFIX(mstrcpy)(char **dst, char *src, size_t len)
 {
     char *new = mc_realloc_managed(*dst, len + 1);
     if (new == NULL) return NULL;
@@ -79,14 +79,13 @@ static inline char *MC_ADD_PREFIX(mstrcpy)(char **dst, char *src, int len)
 }
 
 ATTRIBUTE(used)
-static inline bool MC_ADD_PREFIX(mstrcmp)(char *s1, char *s2, int len)
+static inline bool MC_ADD_PREFIX(mstrcmp)(char *s1, char *s2, size_t len)
 {
     bool eq = true;
     size_t c = MC_ADD_PREFIX(countof)(s1);
-    for (size_t i = 0; i < c && i < (size_t)len; i++) {
+    for (size_t i = 0; i < c && i < len; i++) {
         eq = s1[i] == s2[i];
         if (!eq) break;
     }
     return eq;
 }
-

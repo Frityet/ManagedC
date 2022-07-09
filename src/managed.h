@@ -92,17 +92,17 @@ struct MC_ADD_PREFIX(PointerMetadata) {
     /**
      * @brief Amount elements in the data pointer.
      */
-    unsigned int    count;
+    size_t    count;
 
     /**
      * @brief Size of the type represented in the data pointer.
      */
-    unsigned int    typesize;
+    size_t    typesize;
 
     /**
      * @brief Count of references to this pointer.
      */
-    unsigned int    reference_count;
+    size_t    reference_count;
 
     /**
      * @brief Callback to be executed on each element in the data pointer.
@@ -160,7 +160,7 @@ static inline void *nullable MC_ADD_PREFIX(reference)(void *nonnull ptr)
     if (mdata == NULL)
         return NULL;
     
-    unsigned int old;
+    size_t old;
     do {
         old = __atomic_load_n(&mdata->reference_count, __ATOMIC_RELAXED);
     } while (MC_CMPXCHG(&mdata->reference_count, &old, old + 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
@@ -183,7 +183,7 @@ static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
         return;
 
     //We are freeing a pointer, so we can remove this reference and check if there is any other references.
-    unsigned int old;
+    size_t old;
     do {
         old = __atomic_load_n(&mdata->reference_count, __ATOMIC_RELAXED);
     } while (MC_CMPXCHG(&mdata->reference_count, &old, old - 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
@@ -192,7 +192,7 @@ static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
         return;
 
     if (mdata->on_free != NULL) {
-        for (unsigned int i = 0; i < mdata->count; i++) {
+        for (size_t i = 0; i < mdata->count; i++) {
             //Call the metadata's "on_free" method for every item in the pointer.
             //Because the pointer is a void *, which has size of 1, we must multiply
             //the index with the size of the type.
@@ -221,7 +221,7 @@ static inline void MC_ADD_PREFIX(release)(const void *nonnull ref)
  */
 ATTRIBUTE(used)
 MC_WARN_RES("This function returns a new allocated pointer on success, you must use the return value!")
-static inline void *nullable MC_ADD_PREFIX(alloc_managed)(unsigned int size, unsigned int count, MC_ADD_PREFIX(FreePointer_f) *nullable on_free)
+static inline void *nullable MC_ADD_PREFIX(alloc_managed)(size_t size, size_t count, MC_ADD_PREFIX(FreePointer_f) *nullable on_free)
 {
     size_t total_size = count * size;
 
@@ -255,7 +255,7 @@ static inline void *nullable MC_ADD_PREFIX(alloc_managed)(unsigned int size, uns
  */
 ATTRIBUTE(used)
 MC_WARN_RES("This function returns the new reallocated pointer on success, you must use the return value!")
-static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, unsigned int count)
+static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, size_t count)
 {
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
     size_t  size     = mdata->typesize,
