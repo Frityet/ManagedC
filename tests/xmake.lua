@@ -2,7 +2,8 @@ add_rules("mode.debug")
 
 local CFLAGS<const> = {
     "-Wall", "-Wextra", "-Werror",
-    sanitizers = "address,leak,undefined"
+    sanitizers = "address,leak,undefined",
+    "-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-unused-function",
 }
 
 set_languages("gnu17")

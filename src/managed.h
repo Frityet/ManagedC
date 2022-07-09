@@ -37,10 +37,6 @@
 
 #define MC_ADD_PREFIX(x) CONCAT(MC_PREFIX, x)
 
-#if !defined(ATTRIBUTE)
-#   define ATTRIBUTE(...) __attribute__((__VA_ARGS__))
-#endif
-
 #if !defined(auto) || !defined(MC_NO_AUTO) 
 /**
  *  @brief Automatically calls free_managed at the end of the scope.
@@ -78,6 +74,21 @@
  * @brief Gets a reference to a managed pointer, incrementing the pointer's reference count by 1.
  */
 #   define ref(obj) (typeof(obj))MC_ADD_PREFIX(reference)(obj)
+#endif
+
+#if !defined(MC_NO_DEFER) && (defined(__llvm__) && defined(__clang__)) && !defined(defer) && !defined(nocapture)
+#define MC_CCATLN_1(x, y) x##y 
+#define MC_CCATLN_2(x, y) MC_CCATLN_1(x, y)
+#define MC_CONCAT_LINE(x) MC_CCATLN_2(x, __LINE__)
+
+#define defer __attribute__((cleanup(defer_cleanup))) void (^MC_CONCAT_LINE($deferfn_))(void)  = ^
+#define nocapture __block
+
+static void defer_cleanup(void *ptr)
+{
+	void (^*fn)(void) = (void (^*)(void))ptr;
+	(*fn)();
+}
 #endif
 
 /**
@@ -121,7 +132,7 @@ struct MC_ADD_PREFIX(PointerMetadata) {
  * @return struct MC_ADD_PREFIX(PointerMetadata)
  * @refitem Metadata of the pointer.
  */
-ATTRIBUTE(used)
+
 static inline struct MC_ADD_PREFIX(PointerMetadata) *nullable MC_ADD_PREFIX(metadataof)(void *nonnull ptr)
 {
     if (ptr == NULL) return NULL;
@@ -138,7 +149,7 @@ static inline struct MC_ADD_PREFIX(PointerMetadata) *nullable MC_ADD_PREFIX(meta
  * @param ptr Managed pointer
  * @return Count of items in the pointer.
  */
-ATTRIBUTE(used)
+
 static inline int MC_ADD_PREFIX(countof)(void *nonnull ptr)
 {
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
@@ -153,7 +164,7 @@ static inline int MC_ADD_PREFIX(countof)(void *nonnull ptr)
  * @param ptr Managed pointer.
  * @return ptr
  */
-ATTRIBUTE(used)
+
 static inline void *nullable MC_ADD_PREFIX(reference)(void *nonnull ptr)
 {
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
@@ -172,7 +183,7 @@ static inline void *nullable MC_ADD_PREFIX(reference)(void *nonnull ptr)
  * @brief Frees a managed pointer.
  * @param ref Pointer to the managed pointer (double pointer).
  */
-ATTRIBUTE(used)
+
 static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
 {
     void *ptr = *((void **)ref);
@@ -207,7 +218,7 @@ static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
  * @brief Releases the resources behind a managed pointer.
  * @param ref Managed pointer
  */
-ATTRIBUTE(used)
+
 static inline void MC_ADD_PREFIX(release)(const void *nonnull ref)
 { MC_ADD_PREFIX(free_managed)(&ref); }
 
@@ -219,7 +230,7 @@ static inline void MC_ADD_PREFIX(release)(const void *nonnull ref)
  * @param on_free Callback to be executed on free.
  * @return Managed pointer, or @c NULL if unable to allocate.
  */
-ATTRIBUTE(used)
+
 MC_WARN_RES("This function returns a new allocated pointer on success, you must use the return value!")
 static inline void *nullable MC_ADD_PREFIX(alloc_managed)(size_t size, size_t count, MC_ADD_PREFIX(FreePointer_f) *nullable on_free)
 {
@@ -253,7 +264,7 @@ static inline void *nullable MC_ADD_PREFIX(alloc_managed)(size_t size, size_t co
  * @return Pointer to the resized block of memory, or NULL if it could not reallocate.
  * @remarks This function works just as the realloc function, on success, the parametre @c ptr is freed.
  */
-ATTRIBUTE(used)
+
 MC_WARN_RES("This function returns the new reallocated pointer on success, you must use the return value!")
 static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, size_t count)
 {
@@ -278,7 +289,7 @@ static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, s
     return newptr->data;
 }
 
-ATTRIBUTE(used)
+
 static inline void *nullable MC_ADD_PREFIX(clone_managed)(void *nonnull ptr)
 {
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
@@ -288,7 +299,7 @@ static inline void *nullable MC_ADD_PREFIX(clone_managed)(void *nonnull ptr)
     return new;
 }
 
-ATTRIBUTE(used)
+
 static inline void *nullable MC_ADD_PREFIX(clone_unmanaged)(void *nonnull ptr)
 {
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);

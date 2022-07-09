@@ -19,7 +19,7 @@
  * @param len Length of the string.
  * @return Managed pointer to the new string.
  */
-ATTRIBUTE(used)
+
 static inline char *nullable MC_ADD_PREFIX(managed_string)(const char *nonnull str, size_t len)
 {
     //+1 for the null term
@@ -42,7 +42,7 @@ static inline char *nullable MC_ADD_PREFIX(managed_string)(const char *nonnull s
  * @remarks This function does not function as base @c strncat. Instead of writing through the buffer of @c dst, this function
  * allocates a new object, and returns it.
  */
-ATTRIBUTE(used)
+
 static inline char *MC_ADD_PREFIX(mstrcat)(char **dst, char *src, size_t len)
 {
     int oldlen = MC_ADD_PREFIX(countof)(*dst);
@@ -65,7 +65,7 @@ static inline char *MC_ADD_PREFIX(mstrcat)(char **dst, char *src, size_t len)
  * @remark This will free the dst string, and return a new, copied, string.
  * @return
  */
-ATTRIBUTE(used)
+
 static inline char *MC_ADD_PREFIX(mstrcpy)(char **dst, char *src, size_t len)
 {
     char *new = mc_realloc_managed(*dst, len + 1);
@@ -78,7 +78,7 @@ static inline char *MC_ADD_PREFIX(mstrcpy)(char **dst, char *src, size_t len)
     return new;
 }
 
-ATTRIBUTE(used)
+
 static inline bool MC_ADD_PREFIX(mstrcmp)(char *s1, char *s2, size_t len)
 {
     bool eq = true;
