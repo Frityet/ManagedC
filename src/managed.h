@@ -279,11 +279,24 @@ static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, u
 }
 
 ATTRIBUTE(used)
-static inline void *nullable MC_ADD_PREFIX(clone)(void *nonnull ptr)
+static inline void *nullable MC_ADD_PREFIX(clone_managed)(void *nonnull ptr)
 {
     struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
     void *new = MC_ADD_PREFIX(alloc_managed)(mdata->typesize, mdata->typesize * mdata->count, mdata->on_free);
 
     memcpy(new, ptr, mdata->typesize * mdata->count);
+    return new;
+}
+
+ATTRIBUTE(used)
+static inline void *nullable MC_ADD_PREFIX(clone_unmanaged)(void *nonnull ptr)
+{
+    struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
+    void *new = calloc(mdata->typesize, mdata->count);
+    if (new == NULL)
+        return NULL;
+
+    memcpy(new, ptr, mdata->typesize * mdata->count);
+
     return new;
 }
