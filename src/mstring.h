@@ -9,16 +9,6 @@
 
 #include "managed.h"
 
-#if !defined(MC_NO_STRING)
-    typedef char *
-#   if defined(MC_PREFIX_STRING)
-       MC_ADD_PREFIX(string);
-#      define string MC_ADD_PREFIX(string)
-#   else
-       string;
-#   endif
-#endif
-
 #if !defined(MC_NO_MSTR_MACRO) && !defined(mstr)
 #   define mstr(str) MC_ADD_PREFIX(managed_string)(str, strlen(str))
 #endif
@@ -30,10 +20,12 @@
  * @return Managed pointer to the new string.
  */
 ATTRIBUTE(used)
-static inline string MC_ADD_PREFIX(managed_string)(const string str, int len)
+static inline char *nullable MC_ADD_PREFIX(managed_string)(const char *nonnull str, int len)
 {
     //+1 for the null term
-    string s = MC_ADD_PREFIX(alloc_managed)(sizeof(char), len + 1, NULL);
+    char *s = MC_ADD_PREFIX(alloc_managed)(sizeof(char), len + 1, NULL);
+    if (s == NULL)
+        return NULL;
 
     memcpy(s, str, len);
     s[len] = '\0';
@@ -51,10 +43,10 @@ static inline string MC_ADD_PREFIX(managed_string)(const string str, int len)
  * allocates a new object, and returns it.
  */
 ATTRIBUTE(used)
-static inline string MC_ADD_PREFIX(mstrcat)(string *dst, string src, int len)
+static inline char *MC_ADD_PREFIX(mstrcat)(char **dst, char *src, int len)
 {
     int oldlen = MC_ADD_PREFIX(countof)(*dst);
-    string new = MC_ADD_PREFIX(realloc_managed)(*dst, oldlen + len + 1);
+    char *new = MC_ADD_PREFIX(realloc_managed)(*dst, oldlen + len + 1);
     if (new == NULL)
         return NULL;
 
@@ -74,9 +66,9 @@ static inline string MC_ADD_PREFIX(mstrcat)(string *dst, string src, int len)
  * @return
  */
 ATTRIBUTE(used)
-static inline string MC_ADD_PREFIX(mstrcpy)(string *dst, string src, int len)
+static inline char *MC_ADD_PREFIX(mstrcpy)(char **dst, char *src, int len)
 {
-    string new = mc_realloc_managed(*dst, len + 1);
+    char *new = mc_realloc_managed(*dst, len + 1);
     if (new == NULL) return NULL;
 
     memcpy(new, src, len);
@@ -87,7 +79,7 @@ static inline string MC_ADD_PREFIX(mstrcpy)(string *dst, string src, int len)
 }
 
 ATTRIBUTE(used)
-static inline bool MC_ADD_PREFIX(mstrcmp)(string s1, string s2, int len)
+static inline bool MC_ADD_PREFIX(mstrcmp)(char *s1, char *s2, int len)
 {
     bool eq = true;
     size_t c = MC_ADD_PREFIX(countof)(s1);
@@ -98,6 +90,3 @@ static inline bool MC_ADD_PREFIX(mstrcmp)(string s1, string s2, int len)
     return eq;
 }
 
-#if defined(MC_PREFIX_STRING)
-#   undef string
-#endif
