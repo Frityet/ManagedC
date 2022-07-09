@@ -78,8 +78,11 @@ int main()
     auto int **alloc_list = mc_alloc_managed(sizeof(int *), 5, free_int_ref); 
     
     alloc_list[0] = mc_alloc_managed(sizeof(int), 1, NULL);
-    *alloc_list[0] = 10;
+    *alloc_list[0] = 11;
     
+    alloc_list[1] = mc_alloc_managed(sizeof(int), 1, NULL);
+    *alloc_list[1] = 10;
+
     alloc_list[2] = mc_alloc_managed(sizeof(int), 1, NULL);
     *alloc_list[2] = 9;
     
