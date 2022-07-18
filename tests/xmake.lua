@@ -3,10 +3,10 @@ add_rules("mode.debug")
 local CFLAGS<const> = {
     "-Wall", "-Wextra", "-Werror",
     sanitizers = "address,leak,undefined",
-    "-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-unused-function",
+    "-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-unused-function", "-Wno-unused-but-set-variable",
 }
 
-set_languages("gnu17")
+set_languages("c89")
 
 target("Test")
 do

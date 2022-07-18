@@ -1,313 +1,165 @@
-/**
- * @file managed.h
- * @brief Implements a garbage collector for pointers.
- * @paragraph LICENCE:
- *                    GNU LESSER GENERAL PUBLIC LICENSE
- *                       Version 2.1, February 1999
- *
- * Copyright (C) 1991, 1999 Free Software Foundation, Inc.
- * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * Everyone is permitted to copy and distribute verbatim copies
- * of this license document, but changing it is not allowed.
- *
- *  [This is the first released version of the Lesser GPL.  It also counts
- * as the successor of the GNU Library Public License, version 2, hence
- * the version number 2.1.]
- *
- */
+#ifndef MANAGEDC_MAIN
+#define MANAGEDC_MAIN
 
-#pragma once
+#include <stddef.h>
 #include <stdlib.h>
-#include <stdatomic.h>
-#include <stdbool.h>
 #include <string.h>
 
-#if !defined(EVAL)
-#   define EVAL(x) x
-#endif
-
-#if !defined(CONCAT)
-#   define X_CONCAT(x, y) x##y
-#   define CONCAT(x, y) X_CONCAT(x, y)
-#endif
-
-#if !defined(MC_PREFIX)
-#   define MC_PREFIX mc_
-#endif
-
-#define MC_ADD_PREFIX(x) CONCAT(MC_PREFIX, x)
-
-#if !defined(auto) || !defined(MC_NO_AUTO) 
-/**
- *  @brief Automatically calls free_managed at the end of the scope.
- */
-#   define auto    ATTRIBUTE(cleanup(MC_ADD_PREFIX(free_managed)))
-#endif
-
-
-#if !defined(MC_NO_NULLABLE) && (defined(__clang__) || defined (__llvm__))
-#   define nullable         _Nullable
-#   define nonnull          _Nonnull
-#   define null_unspec      _Null_unspecified
+#if defined (__STRICT_ANSI__)
+#	define MC_AN_C true
 #else
-#   define nullable
-#   define nonnull
-#   define null_unspec
+#	define MC_AN_C false
 #endif
 
-
-#if !defined (MC_CMPXCHG)
-#   define MC_CMPXCHG(ptr, expect, desired, success, failed) \
-        __atomic_compare_exchange_n (ptr, expect, desired, true, success, failed)
+#if defined (__GNUC__)
+#	define MC_GNU_C true 
+#else
+#	define MC_GNU_C false
 #endif
 
-#if !defined (MC_WARN_RES)
-#   if defined (__clang__) || defined(__llvm__)
-#       define MC_WARN_RES(...) __attribute__((warn_unused_result(__VA_ARGS__)))
-#   else
-#       define MC_WARN_RES(...) __attribute__((warn_unused_result))
-#   endif
+#if defined (__clang__) && defined (__llvm__)
+#	define MC_CLANG_C true
+#else
+#	define MC_CLANG_C false
 #endif
 
-#if !defined(ref) || defined(MC_NO_REF)
-/**
- * @brief Gets a reference to a managed pointer, incrementing the pointer's reference count by 1.
- */
-#   define ref(obj) (typeof(obj))MC_ADD_PREFIX(reference)(obj)
-#endif
+#if MC_AN_C == true
+#	define mc_nullable
+# 	define mc_nonnull
+#	define mc_attribute(...)
+#	if !defined(defer)
+#		define defer
+#	endif
+#	define mc_inline
+#else
+#	define mc_nullable _Nullable
+# 	define mc_nonnull _Nonnull
+#	define mc_attribute(...) __attribute__((__VA_ARGS__))
+#	define mc_inline inline __attribute__((always_inline))
+#	if MC_CLANG_C == true && !defined(defer) && !defined(nocapture)
+#		define MC_CCATLN_1(x, y) x##y 
+#		define MC_CCATLN_2(x, y) MC_CCATLN_1(x, y)
+#		define MC_CONCAT_LINE(x) MC_CCATLN_2(x, __LINE__)
+#		define defer __attribute__((cleanup(mc_defer_cleanup))) void (^MC_CONCAT_LINE(_deferfn_))(void) = ^
+#		define nocapture __block
 
-#if !defined(MC_NO_DEFER) && (defined(__llvm__) && defined(__clang__)) && !defined(defer) && !defined(nocapture)
-#define MC_CCATLN_1(x, y) x##y 
-#define MC_CCATLN_2(x, y) MC_CCATLN_1(x, y)
-#define MC_CONCAT_LINE(x) MC_CCATLN_2(x, __LINE__)
-
-#define defer __attribute__((cleanup(defer_cleanup))) void (^MC_CONCAT_LINE($deferfn_))(void)  = ^
-#define nocapture __block
-
-static void defer_cleanup(void *ptr)
+mc_inline void mc_defer_cleanup(void *mc_nonnull ptr)
 {
 	void (^*fn)(void) = (void (^*)(void))ptr;
 	(*fn)();
 }
+
+#	else
+#		define defer
+#		define nocapture
+#	endif
 #endif
 
-/**
- * @brief Callback type for freeing a managed pointer.
- */
-typedef void MC_ADD_PREFIX(FreePointer_f)(void *nonnull);
+#if !defined(auto)
+#	define auto 		"Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!"
+#else 
+#	define managed_auto mc_attribute(cleanup(managed_release_ptr))
+#endif
 
-/**
- * @brief Metadata about a managed pointer.
- */
-struct MC_ADD_PREFIX(PointerMetadata) {
-    /**
-     * @brief Amount elements in the data pointer.
-     */
-    size_t    count;
+typedef void managed_Free_f(void *mc_nonnull alloc);
 
-    /**
-     * @brief Size of the type represented in the data pointer.
-     */
-    size_t    typesize;
+struct managed_PointerInformation {
+	/**
+	 * count: Number of used array elements.
+	 * capacity: Number of allocated array elements. (Used for managed_Vector)
+	 * typesize: Size of the type.
+	 * reference_count: Number of references to this pointer.
+	 */
+	unsigned long count, capacity, typesize, reference_count;
 
-    /**
-     * @brief Count of references to this pointer.
-     */
-    size_t    reference_count;
+	/**
+	* Function to call on 0 references.
+	*/
+	managed_Free_f *mc_nonnull free;
 
-    /**
-     * @brief Callback to be executed on each element in the data pointer.
-     */
-    MC_ADD_PREFIX(FreePointer_f)    *nullable on_free;
-
-    /**
-     * @brief Pointer to the allocated data.
-     */
-    void                            *nonnull data;
+	/**
+	* Pointer to the data. 
+	*/
+	void *mc_nonnull data;
 };
 
-/**
- * @brief Gets the metadata of a managed pointer.
- * @param ptr Managed pointer
- * @return struct MC_ADD_PREFIX(PointerMetadata)
- * @refitem Metadata of the pointer.
- */
+typedef void *mc_nonnull const *mc_nullable managed_Pointer_tpcp; 
+typedef managed_Pointer_tpcp mptr;
 
-static inline struct MC_ADD_PREFIX(PointerMetadata) *nullable MC_ADD_PREFIX(metadataof)(void *nonnull ptr)
+/* Using a double pointer system gives the big advantage that the pointer the managed pointer represents can be changed without a complete break of the system. */
+/* The downside is that the semantics are a bit weird. You must do (*ptr)[index] to access an element. */
+#define mptr(T) T *mc_nonnull const *mc_nullable
+
+/* The const will be discarded in this file. YOU can't modify the data, I will! */
+static const struct managed_PointerInformation *mc_nonnull managed_info_of(managed_Pointer_tpcp ptr)
 {
-    if (ptr == NULL) return NULL;
-    //Offsets the pointer by the size of the metadata, making the new address point right at the start of the metadata
-    struct MC_ADD_PREFIX(PointerMetadata) *mdata = (struct MC_ADD_PREFIX(PointerMetadata) *)(ptr - sizeof(struct MC_ADD_PREFIX(PointerMetadata)));
-
-    //High chance of causing a segmentation fault, especially if `mdata` is NULL.
-    //Too bad I don't care!
-    return mdata->data == ptr ? mdata : NULL;
+	/* We need to get the address of the end of the struct, then subtract it by one */
+	return ((struct managed_PointerInformation *)(ptr + 1)) - 1;
 }
 
-/**
- * @brief Gets the count of items in the managed pointer.
- * @param ptr Managed pointer
- * @return Count of items in the pointer.
- */
-
-static inline int MC_ADD_PREFIX(countof)(void *nonnull ptr)
+#define mc_new(T, free) (mptr(T))managed_allocate(1, sizeof(T), free, NULL)
+#define mc_array(T, i, free) (mptr(T))managed_allocate(i, sizeof(T), free, NULL)
+static managed_Pointer_tpcp managed_allocate(unsigned long count, unsigned long size, managed_Free_f *mc_nullable mfree, const void *data)
 {
-    struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
-    if (mdata == NULL)
-        return 0;
+	struct managed_PointerInformation *alloc = malloc(sizeof(struct managed_PointerInformation));
+	if (alloc == NULL) return NULL;
 
-    return (int)mdata->count;
+	alloc->capacity 		= count;
+	alloc->count		 	= count;
+	alloc->typesize 		= size;
+	alloc->reference_count 	= 1;
+	alloc->free 			= mfree;
+
+	alloc->data = calloc(count, size);
+	if (alloc->data == NULL) { 
+		free(alloc);
+		return NULL;
+	}
+	if (data != NULL) memcpy(alloc->data, data, count * size);
+
+	return &alloc->data;
 }
 
-/**
- * @brief Gets a reference to the managed pointer, incrementing the reference counter.
- * @param ptr Managed pointer.
- * @return ptr
- */
-
-static inline void *nullable MC_ADD_PREFIX(reference)(void *nonnull ptr)
+#define mc_ref(ptr) (void *)managed_reference((managed_Pointer_tpcp)ptr)
+static managed_Pointer_tpcp managed_reference(managed_Pointer_tpcp ptr)
 {
-    struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
-    if (mdata == NULL)
-        return NULL;
-    
-    size_t old;
-    do {
-        old = __atomic_load_n(&mdata->reference_count, __ATOMIC_RELAXED);
-    } while (MC_CMPXCHG(&mdata->reference_count, &old, old + 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
+	struct managed_PointerInformation *info = (struct managed_PointerInformation *)managed_info_of(ptr);
 
-    return mdata->data;
+	info->reference_count++;
+	return ptr;
 }
 
-/**
- * @brief Frees a managed pointer.
- * @param ref Pointer to the managed pointer (double pointer).
- */
-
-static inline void MC_ADD_PREFIX(free_managed)(const void *nonnull ref)
+#define mc_free(ptr) managed_release((managed_Pointer_tpcp)ptr)
+static void managed_release(managed_Pointer_tpcp ptr)
 {
-    void *ptr = *((void **)ref);
-    struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
+	struct managed_PointerInformation *info = (struct managed_PointerInformation *)managed_info_of(ptr);
+	unsigned long i;
 
-    //TODO: Find better solution?
-    if (mdata == NULL)
-        return;
-
-    //We are freeing a pointer, so we can remove this reference and check if there is any other references.
-    size_t old;
-    do {
-        old = __atomic_load_n(&mdata->reference_count, __ATOMIC_RELAXED);
-    } while (MC_CMPXCHG(&mdata->reference_count, &old, old - 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0);
-
-    if (mdata->reference_count > 0)
-        return;
-
-    if (mdata->on_free != NULL) {
-        for (size_t i = 0; i < mdata->count; i++) {
-            //Call the metadata's "on_free" method for every item in the pointer.
-            //Because the pointer is a void *, which has size of 1, we must multiply
-            //the index with the size of the type.
-            mdata->on_free(ptr + (mdata->typesize * i));
-        }
-    }
-
-    free(mdata);
+	info->reference_count--;
+	if (info->reference_count == 0) {
+		if (info->free != NULL) {
+			for (i = 0; i < info->count; i++) {
+				info->free(&info->data[i * info->typesize]);
+			}
+		}
+		
+		free(info->data);
+		free(info);
+	}
 }
 
-/**
- * @brief Releases the resources behind a managed pointer.
- * @param ref Managed pointer
- */
-
-static inline void MC_ADD_PREFIX(release)(const void *nonnull ref)
-{ MC_ADD_PREFIX(free_managed)(&ref); }
-
-
-/**
- * @brief Allocates a managed pointer.
- * @param size Size of the type behind the data pointer.
- * @param count Number of elements in this pointer.
- * @param on_free Callback to be executed on free.
- * @return Managed pointer, or @c NULL if unable to allocate.
- */
-
-MC_WARN_RES("This function returns a new allocated pointer on success, you must use the return value!")
-static inline void *nullable MC_ADD_PREFIX(alloc_managed)(size_t size, size_t count, MC_ADD_PREFIX(FreePointer_f) *nullable on_free)
+static void managed_reallocate(managed_Pointer_tpcp ptr, size_t newc)
 {
-    size_t total_size = count * size;
+	struct managed_PointerInformation *info = (struct managed_PointerInformation *)managed_info_of(ptr);
 
-    //Calloc initalises to 0, so it is best we use it.
-    struct MC_ADD_PREFIX(PointerMetadata) *ptr = calloc(1, sizeof(struct MC_ADD_PREFIX(PointerMetadata)) + total_size);
-    if (ptr == NULL) {
-        return NULL;
-    }
-
-    *ptr = (struct MC_ADD_PREFIX(PointerMetadata)){
-        .count          = count,
-        .typesize       = size,
-        .on_free        = on_free,
-        .reference_count= 1
-    };
-
-    //The address of the actual data is just after the metadata.
-    //We add 1 instead of `sizeof(*ptr)` because adding onto a pointer
-    //increases its address by the size of the type * the count to add.
-    ptr->data = ptr + 1;
-
-    return ptr->data;
+	void *tmp = realloc;
 }
 
-/**
- * @brief Reallocates a managed pointer.
- * @param ptr Managed pointer
- * @param count New count (multiplied with the managed pointer's @c typesize).
- * @return Pointer to the resized block of memory, or NULL if it could not reallocate.
- * @remarks This function works just as the realloc function, on success, the parametre @c ptr is freed.
- */
-
-MC_WARN_RES("This function returns the new reallocated pointer on success, you must use the return value!")
-static inline void *nullable MC_ADD_PREFIX(realloc_managed)(void *nonnull ptr, size_t count)
-{
-    struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
-    size_t  size     = mdata->typesize,
-            oldcount = mdata->count,
-            newsize  = size * count;
-
-
-    struct MC_ADD_PREFIX(PointerMetadata) *newptr = realloc(mdata, sizeof(struct MC_ADD_PREFIX(PointerMetadata)) + newsize);
-    if (newptr == NULL) 
-        return NULL;
-    
-
-    //The rest of the fields are copied by `realloc`.
-    newptr->count   = count;
-    newptr->data    = newptr + 1;
-
-     if (oldcount < count)
-        memset(newptr->data + (size * oldcount), 0, size * (count - oldcount));
-
-    return newptr->data;
+/* for __attribute__((cleanup())) */
+static void managed_release_ptr(void *ptr)
+{ 
+	managed_Pointer_tpcp *m = ptr;
+	managed_release(*m); 
 }
 
-
-static inline void *nullable MC_ADD_PREFIX(clone_managed)(void *nonnull ptr)
-{
-    struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
-    void *new = MC_ADD_PREFIX(alloc_managed)(mdata->typesize, mdata->typesize * mdata->count, mdata->on_free);
-
-    memcpy(new, ptr, mdata->typesize * mdata->count);
-    return new;
-}
-
-
-static inline void *nullable MC_ADD_PREFIX(clone_unmanaged)(void *nonnull ptr)
-{
-    struct MC_ADD_PREFIX(PointerMetadata) *mdata = MC_ADD_PREFIX(metadataof)(ptr);
-    void *new = calloc(mdata->typesize, mdata->count);
-    if (new == NULL)
-        return NULL;
-
-    memcpy(new, ptr, mdata->typesize * mdata->count);
-
-    return new;
-}
+#endif
