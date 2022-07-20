@@ -2,17 +2,22 @@
 #include <stdio.h>
 
 #include "managed.h"
+#include "test.h"
 
-int main()
+TEST(alloc)
 {
-	mptr(int) ptr;
-	
+	int *val = NULL;
+
 	{
-		mptr(int) i = mc_new(int, NULL);
-		**i = 5;
-		ptr = mc_ref(i); 
-		mc_free(i);
+		int *i = mc_new(int, NULL);
+		ASSERT(i != NULL, "Could not allocate 4 bytes!");
+
+		*i = 512;
+		val = mc_ref(i);
+		mc_release(i);
 	}
 
-	mc_free(ptr);
+	ASSERT(*val == 512, "Value did not set!");
+
+	return true;
 }

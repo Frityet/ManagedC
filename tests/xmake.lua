@@ -7,8 +7,9 @@ local CFLAGS<const> = {
 }
 
 set_languages("c89")
+-- set_languages("gnulatest")
 
-target("Test")
+target("tests")
 do
     set_kind("binary")
     add_files("src/**.c")
