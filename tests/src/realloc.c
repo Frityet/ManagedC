@@ -15,5 +15,5 @@ TEST(realloc)
 	memcpy(new + 10, arr, sizeof(arr));
 	ASSERT(new[10] == 10, "Value did not set!");
 
-	return true; 
+	return success; 
 }

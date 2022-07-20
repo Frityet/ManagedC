@@ -4,13 +4,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "managed.h"
+#include "managed/mstring.h"
 
 #undef bool
 #undef true
 #undef false
 
-typedef enum Boolean { true = 1, false = 0 } bool;
+typedef enum Boolean { true = 1, false = 0, success = 1, failure = 0 } bool;
 
 typedef bool Test_f(void);
 
@@ -31,6 +31,6 @@ static bool assert(bool expr, const char *err, const char *strexpr, const char *
 	return true;
 }
 
-#define ASSERT(expr, msg) do { if (!assert((expr), msg, #expr, __FILE__, __LINE__, __PRETTY_FUNCTION__)) return false; } while (0)
+#define ASSERT(expr, msg) do { if (!assert((expr), msg, #expr, __FILE__, __LINE__, __PRETTY_FUNCTION__)) return failure; } while (0)
 
 #endif

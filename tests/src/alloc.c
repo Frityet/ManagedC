@@ -19,5 +19,5 @@ TEST(alloc)
 
 	ASSERT(*val == 512, "Value did not set!");
 
-	return true;
+	return success;
 }

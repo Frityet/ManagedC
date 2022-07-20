@@ -49,7 +49,7 @@ struct managed_PointerInfo {
 	 * typesize: Size of the type.
 	 * reference_count: Number of references to this pointer.
 	 */
-	unsigned long count, capacity, typesize, reference_count;
+	unsigned long int count, typesize, reference_count;
 
 	/**
 	* Function to call on 0 references.
@@ -62,9 +62,9 @@ struct managed_PointerInfo {
 	void *mc_nonnull data;
 };
 
-mc_inline const struct managed_PointerInfo *mc_nullable managed_info_of(void *ptr)
+mc_inline const struct managed_PointerInfo *mc_nullable managed_info_of(const void *ptr)
 {
-	const struct managed_PointerInfo *info = (struct managed_PointerInfo *)ptr - 1;
+	struct managed_PointerInfo *info = (struct managed_PointerInfo *)ptr - 1;
 	if (info->data != ptr)
 		return NULL;
 
@@ -72,15 +72,14 @@ mc_inline const struct managed_PointerInfo *mc_nullable managed_info_of(void *pt
 }
 
 #define mc_new(T, free) (T *)managed_allocate(1, sizeof(T), (managed_Free_f *)free, NULL)
-static void *mc_nullable managed_allocate(unsigned long count, unsigned long typesize, managed_Free_f *mc_nullable free, void *mc_nullable data)
+static void *mc_nullable managed_allocate(unsigned long int count, unsigned long int typesize, managed_Free_f *mc_nullable free, const void *mc_nullable data)
 {
-	unsigned long total = sizeof(struct managed_PointerInfo) + count * typesize;
+	unsigned long int total = sizeof(struct managed_PointerInfo) + count * typesize;
 
 	struct managed_PointerInfo *info = calloc(1, total);
 	if (info == NULL) return NULL;
 	
 	info->count 			= count;
-	info->capacity 			= count;
 	info->typesize 			= typesize;
 	info->free 				= free;
 	info->reference_count 	= 1;
@@ -93,7 +92,7 @@ static void *mc_nullable managed_allocate(unsigned long count, unsigned long typ
 	return info->data;
 }
 
-static void *mc_nullable managed_copy(void *ptr, unsigned long count)
+static void *mc_nullable managed_copy(const void *ptr, unsigned long int count)
 {
 	struct managed_PointerInfo 	*info = (void *)managed_info_of(ptr),
 								*allocinfo = NULL;
@@ -119,7 +118,7 @@ static void *managed_reference(void *mc_nonnull ptr)
 static void managed_free(void *mc_nonnull ptr)
 {
 	struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
-	unsigned long i = 0;
+	unsigned long int i = 0;
 	
 	info->reference_count--;
 	if (info->reference_count < 1) {

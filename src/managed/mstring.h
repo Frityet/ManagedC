@@ -1,28 +1,69 @@
 #if !defined(MANAGEDC_MSTRING)
 #define MANAGEDC_MSTRING
 
+#include <string.h>
+
 #include "managed.h"
 
-typedef char *mc_nonnull const mstring;
+typedef char mstring;
 
-static mstring *managed_string(const char *value, unsigned long len)
-{ 
-	mstring *new = (mstring *)managed_allocate(len + 1, sizeof(char), NULL, value);
-	(*new)[len + 1] = '\0';
+#define mstr(str) managed_string(str, strlen(str))
+static mstring *mc_nullable managed_string(const char *mc_nonnull str, unsigned long int len)
+{
+	mstring *s = managed_allocate(len + 1, sizeof(char), NULL, str);
 
-	return (mstring *)new;
+	/*Just in case str is not null terminated*/
+	((char *)s)[len] = '\0';
+
+	return s;
 }
 
-static mstring *managed_string_concatenate(mstring *dst, const char *src, unsigned long len)
+#define mstrlen(str) managed_string_length(str)
+static long int managed_string_length(const mstring *mc_nonnull str)
 {
-	unsigned long dstlen = mc_count(dst), total = dstlen + len + 1; 
+	const struct managed_PointerInfo *info = managed_info_of(str);
+	if (info == NULL) return -1;
+	
+	return info->count - 1; /*No null terminator*/
+}
 
-	char **new = (char **)mc_array(char, total, NULL);
+#define mstrdup(str) managed_string_duplicate(str)
+static mstring *mc_nullable managed_string_duplicate(const mstring *mc_nonnull str)
+{
+	long length = managed_string_length(str);
+	if (length == -1) return NULL;
+	return managed_string(str, length);
+}
 
-	memcpy(*(mptr)new, *dst, dstlen);
-	(*new)[total] = '\0';
+#define mstrcat(str1, str2) managed_string_concatenate(str1, str2)
+static mstring *mc_nullable managed_string_concatenate(const mstring *mc_nonnull s1, const mstring *mc_nonnull s2)
+{
+	long int s1len = managed_string_length(s1), s2len = managed_string_length(s2), total;
+	if (s1len == -1) s1len = strlen(s1);
+	if (s2len == -1) s2len = strlen(s2);
+	total = s1len + s2len;
 
-	return (mstring *)new;
+	mstring *s = managed_allocate(total + 1, sizeof(char), NULL, s1);
+	if (s == NULL) return NULL;
+
+	memcpy((char *)(s + s1len), s2, s2len);
+	((char *)s)[total] = '\0';
+
+	return s;
+}
+
+static int managed_string_compare(const mstring *mc_nonnull s1, const mstring *mc_nonnull s2)
+{
+	long int s1len = managed_string_length(s1), s2len = managed_string_length(s2), total;
+	if (s1len == -1) s1len = strlen(s1);
+	if (s2len == -1) s2len = strlen(s2);
+	if (s1len != s2len) return 0;
+
+	for (total = 0; total < s1len; total++) {
+		if (((char *)s1)[total] != ((char *)s2)[total]) return 0;
+	}
+
+	return 1;
 }
 
 #endif
