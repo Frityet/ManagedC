@@ -7,6 +7,18 @@
 #include <errno.h>
 extern int errno;
 
+#if !defined(MC_ALLOCATOR)
+# 	define MC_ALLOCATOR(c, s) calloc(c, s)
+#endif
+
+#if !defined(MC_MEMCPY)
+#	define MC_MEMCPY(dst, src, nmemb) memcpy(dst, src, nmemb)
+#endif
+
+#if !defined(MC_FREE)
+# 	define MC_FREE(ptr) free(ptr)
+#endif
+
 #if defined(__STRICT_ANSI__)
 #	define mc_nullable
 # 	define mc_nonnull 
@@ -49,7 +61,7 @@ struct managed_PointerInfo {
 	 * typesize: Size of the type.
 	 * reference_count: Number of references to this pointer.
 	 */
-	unsigned long int count, typesize, reference_count;
+	unsigned long int count, capacity, typesize, reference_count;
 
 	/**
 	* Function to call on 0 references.
@@ -76,32 +88,36 @@ static void *mc_nullable managed_allocate(unsigned long int count, unsigned long
 {
 	unsigned long int total = sizeof(struct managed_PointerInfo) + count * typesize;
 
-	struct managed_PointerInfo *info = calloc(1, total);
+	struct managed_PointerInfo *info = MC_ALLOCATOR(1, total);
 	if (info == NULL) return NULL;
 	
 	info->count 			= count;
+	info->capacity 			= count;
 	info->typesize 			= typesize;
 	info->free 				= free;
 	info->reference_count 	= 1;
 	info->data 				= info + 1;
 
 	if (data != NULL) {
-		memcpy(info->data, data, count * typesize);
+		MC_MEMCPY(info->data, data, count * typesize);
 	}
 
 	return info->data;
 }
 
-static void *mc_nullable managed_copy(const void *ptr, unsigned long int count)
+static void *mc_nullable managed_copy(const void *ptr, long int count)
 {
 	struct managed_PointerInfo 	*info = (void *)managed_info_of(ptr),
 								*allocinfo = NULL;
-	void *alloc = managed_allocate(count, info->typesize, info->free, NULL);
+								
+	void *alloc = NULL; 
+	if (count < 1) count = info->count;
+	alloc = managed_allocate(count, info->typesize, info->free, NULL);
 	if (alloc == NULL) return NULL;
 	allocinfo = (void *)managed_info_of(ptr);
 
 	allocinfo->count = info->count;
-	memcpy(alloc, ptr, info->count * info->typesize);
+	MC_MEMCPY(alloc, ptr, info->count * info->typesize);
 
 	return alloc;
 }
@@ -128,7 +144,7 @@ static void managed_free(void *mc_nonnull ptr)
 			}
 		}
 		
-		free(info);
+		MC_FREE(info);
 	}
 }
 
