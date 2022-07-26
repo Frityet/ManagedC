@@ -5,7 +5,11 @@
 
 #include "managed.h"
 
-typedef char mstring;
+#if !defined(MC_STRLEN)
+#	define MC_STRLEN(s) strlen(s)
+#endif
+
+typedef const char mstring;
 
 #define mstr(str) managed_string(str, strlen(str))
 static mstring *mc_nullable managed_string(const char *mc_nonnull str, unsigned long int len)
@@ -19,7 +23,7 @@ static mstring *mc_nullable managed_string(const char *mc_nonnull str, unsigned 
 }
 
 #define mstrlen(str) managed_string_length(str)
-static long int managed_string_length(const mstring *mc_nonnull str)
+static long int managed_string_length(mstring *mc_nonnull str)
 {
 	const struct managed_PointerInfo *info = managed_info_of(str);
 	if (info == NULL) return -1;
@@ -28,7 +32,7 @@ static long int managed_string_length(const mstring *mc_nonnull str)
 }
 
 #define mstrdup(str) managed_string_duplicate(str)
-static mstring *mc_nullable managed_string_duplicate(const mstring *mc_nonnull str)
+static mstring *mc_nullable managed_string_duplicate(mstring *mc_nonnull str)
 {
 	long length = managed_string_length(str);
 	if (length == -1) return NULL;
@@ -36,7 +40,7 @@ static mstring *mc_nullable managed_string_duplicate(const mstring *mc_nonnull s
 }
 
 #define mstrcat(str1, str2) managed_string_concatenate(str1, str2)
-static mstring *mc_nullable managed_string_concatenate(const mstring *mc_nonnull s1, const mstring *mc_nonnull s2)
+static mstring *mc_nullable managed_string_concatenate(mstring *mc_nonnull s1, mstring *mc_nonnull s2)
 {
 	mstring *s = NULL;
 	long int s1len = managed_string_length(s1), s2len = managed_string_length(s2), total;
@@ -47,21 +51,21 @@ static mstring *mc_nullable managed_string_concatenate(const mstring *mc_nonnull
 	s = managed_allocate(total + 1, sizeof(char), NULL, s1);
 	if (s == NULL) return NULL;
 
-	memcpy((char *)(s + s1len), s2, s2len);
+	MC_MEMCPY((char *)(s + s1len), s2, s2len);
 	((char *)s)[total] = '\0';
 
 	return s;
 }
 
-static int managed_string_compare(const mstring *mc_nonnull s1, const mstring *mc_nonnull s2)
+#define mstrcmp(str1, str2) (!managed_string_compare(str1, str2, managed_string_length(str2) == -1 ? strlen(str2) : managed_string_length(str2)))
+static int managed_string_compare(mstring *mc_nonnull s1, const char *mc_nonnull s2, long int s2len)
 {
-	long int s1len = managed_string_length(s1), s2len = managed_string_length(s2), total;
+	long int s1len = managed_string_length(s1), i = 0;
 	if (s1len == -1) s1len = strlen(s1);
-	if (s2len == -1) s2len = strlen(s2);
 	if (s1len != s2len) return 0;
 
-	for (total = 0; total < s1len; total++) {
-		if (((char *)s1)[total] != ((char *)s2)[total]) return 0;
+	for (i = 0; i < s1len; i++) {
+		if (((char *)s1)[i] != ((char *)s2)[i]) return 0;
 	}
 
 	return 1;

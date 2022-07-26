@@ -118,6 +118,7 @@ static void *mc_nullable managed_allocate(unsigned long int count, unsigned long
 	return info->data;
 }
 
+#define mc_dup(ptr) managed_dup(ptr, managed_info_of(ptr)->count)
 static void *mc_nullable managed_copy(const void *ptr, long int count)
 {
 	struct managed_PointerInfo 	*info = (void *)managed_info_of(ptr),
@@ -135,7 +136,7 @@ static void *mc_nullable managed_copy(const void *ptr, long int count)
 	return alloc;
 }
 
-#define mc_reference(ptr) MC_EXPAND((mc_typeof(ptr)))managed_reference(ptr)
+#define mc_ref(ptr) MC_EXPAND((mc_typeof(ptr)))managed_reference(ptr)
 static void *managed_reference(const void *mc_nonnull ptr)
 {
 	struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
@@ -143,7 +144,7 @@ static void *managed_reference(const void *mc_nonnull ptr)
 	return (void *)ptr;
 }
 
-#define mc_release(ptr) managed_free(ptr)
+#define mc_free(ptr) managed_free(ptr)
 static void managed_free(const void *mc_nonnull ptr)
 {
 	struct managed_PointerInfo *info = (void *)managed_info_of(ptr);

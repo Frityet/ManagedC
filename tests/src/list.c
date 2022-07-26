@@ -6,7 +6,7 @@
 declaretest(list)
 {
 	mlist(unsigned long int) *list = mlist_create(unsigned long int, NULL);
-	unsigned long i = 0;
+	unsigned long int i = 0;
 
 	ASSERT(list != NULL, "Could not allocate list!");
 	for (i = 0; i < (1 << 16); i++) 
@@ -25,6 +25,6 @@ declaretest(list)
 		ASSERT(val == i, "Value did not match!");
 	}
 
-	mc_release(list);
+	mc_ref(list);
 	return success;
 }

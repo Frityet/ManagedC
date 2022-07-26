@@ -13,8 +13,8 @@ declaretest(alloc)
 		ASSERT(i != NULL, "Could not allocate 4 bytes!");
 
 		*i = 512;
-		val = mc_reference(i);
-		mc_release(i);
+		val = mc_ref(i);
+		mc_free(i);
 	}
 
 	ASSERT(*val == 512, "Value did not set!");

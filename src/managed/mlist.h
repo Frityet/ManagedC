@@ -16,13 +16,13 @@ static void managed_list_free(const mlist(void) *list)
 	managed_free(*list);
 }
 
-#define mlist_create(type, free) (mlist(type) *)managed_list(sizeof(type), free)
-static mlist(void) *managed_list(unsigned long int typesize, managed_Free_f *free)
+#define mlist_new(type, free) (mlist(type) *)managed_list(sizeof(type), free)
+static mlist(void) *managed_list(unsigned long int typesize, unsigned long int count, managed_Free_f *free, void *data)
 {
 	mlist(void) *base = managed_allocate(1, sizeof(void *), (managed_Free_f *)managed_list_free, NULL);
 	if (base == NULL) return NULL;
 
-	*((void **)base) = managed_allocate(2, typesize, free, NULL);
+	*((void **)base) = managed_allocate(count < 2 ? 2 : , typesize, free, NULL);
 	if (*base == NULL) {
 		managed_free((void *)base);
 		return NULL;
@@ -57,23 +57,28 @@ static int managed_list_push(const void *ptr, const void *data)
 static int managed_list_pop(const void *ptr, unsigned long int index)
 {
 	mlist(void) *list = ptr;
-	struct managed_PointerInfo ldata = *_mcinternal_ptrinfo(*list);
-	unsigned long int i = 0, c = 0;
+	struct managed_PointerInfo *ldata = _mcinternal_ptrinfo(*list);
+	unsigned long int i = 0;
 
-	void *newalloc = managed_allocate(ldata.capacity, ldata.typesize, ldata.free, NULL);
+	void *newalloc = managed_allocate(ldata->capacity, ldata->typesize, ldata->free, NULL);
 	if (newalloc == NULL) return 1; /*Failed allocation*/
 
-	if (index < 0) index = ldata.count;
-	if (index >= ldata.count) return 2; /*Index out of bounds*/
+	if (index < 0) index = ldata->count;
+	if (index >= ldata->count) return 2; /*Index out of bounds*/
 
-	_mcinternal_ptrinfo(newalloc)->count = ldata.count - 1;
+	_mcinternal_ptrinfo(newalloc)->count = ldata->count - 1;
 
-	for (i = 0; i < ldata.count; i++) {
+	/*
+	MC_MEMCPY(newalloc, *list, i += (index - 1) * ldata.typesize);
+	MC_MEMCPY(((unsigned char *)newalloc) + i, *list, (ldata.count - index) * ldata.typesize);
+	*/
+	
+	for (i = 0; i < ldata->count; i++) {
 		if (i == index) continue;
 
-		MC_MEMCPY(((unsigned char *)newalloc) + i * ldata.typesize, ((unsigned char *)*list) + i * ldata.typesize, ldata.typesize);
-		c++; /* lol */
+		MC_MEMCPY(((unsigned char *)newalloc) + i * ldata->typesize, ((unsigned char *)*list) + i * ldata->typesize, ldata->typesize);
 	}
+	
 
 	managed_free(*list);
 	*(void **)list = newalloc;
@@ -90,6 +95,7 @@ static void *managed_list_get(const void *ptr, unsigned long int index)
 	return ((unsigned char *) *list) + (index * ldata->typesize);
 }
 
+#define mlist_set(list, index, data) managed_list_set((void *)list, index, data)
 static int managed_list_set(void *ptr, unsigned long int index, void *data)
 {
 	mlist(void) *list = ptr;
@@ -97,6 +103,17 @@ static int managed_list_set(void *ptr, unsigned long int index, void *data)
 	if (index >= ldata->count) return 2; /*Index out of bounds*/
 	MC_MEMCPY(((unsigned char *) *list) + index * ldata->typesize, data, ldata->typesize);
 	return 0;
+}
+
+static mlist(void) *managed_list_copy(const void *ptr)
+{
+	mlist(void) *list = ptr;
+	struct managed_PointerInfo *ldata = _mcinternal_ptrinfo(*list);
+	mlist(void) *newlist = managed_list(ldata->typesize, ldata->free);
+	if (newlist == NULL) return NULL;
+	_mcinternal_ptrinfo(newlist)->count = ldata->count;
+	MC_MEMCPY(*newlist, *list, ldata->count * ldata->typesize);
+	return newlist;
 }
 
 #undef _mcinternal_ptrinfo
