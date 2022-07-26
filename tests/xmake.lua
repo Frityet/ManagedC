@@ -1,7 +1,7 @@
-add_rules("mode.debug")
+add_rules("mode.debug", "mode.release")
 
-local CFLAGS<const> = {
-    "-Wall", "-Wextra", "-Werror",
+local CFLAGS = {
+    "-Wall", "-Wextra", "-Werror", "-Wpedantic",
     sanitizers = "address,leak,undefined",
     "-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-unused-function", "-Wno-unused-but-set-variable",
 }
@@ -15,6 +15,8 @@ do
     add_files("src/**.c")
     add_cflags(CFLAGS, "-fsanitize=" .. CFLAGS.sanitizers, "-fno-omit-frame-pointer")
     add_ldflags("-fsanitize=" .. CFLAGS.sanitizers)
+
+    
 
     add_deps("ManagedC")
 end

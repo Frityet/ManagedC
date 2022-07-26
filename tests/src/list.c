@@ -1,12 +1,14 @@
+#include "managed.h"
 #include "managed/mlist.h"
 #include "test.h"
+#include <stdio.h>
 
-TEST(list)
+declaretest(list)
 {
 	mlist(unsigned long int) *list = mlist_create(unsigned long int, NULL);
-	ASSERT(list != NULL, "Could not allocate list!");
 	unsigned long i = 0;
 
+	ASSERT(list != NULL, "Could not allocate list!");
 	for (i = 0; i < (1 << 16); i++) 
 	{
 		unsigned long *alloc = managed_allocate(i, sizeof(unsigned long), NULL, NULL);
@@ -16,5 +18,13 @@ TEST(list)
 
 	ASSERT(mc_countof(*list) == (1 << 16), "Count did not match!");
 
+	for (i = 0; i < (1 << 16); i++) 
+	{
+		unsigned long int val = *(unsigned long int *)mlist_get(list, i);
+		printf("%lu: %lu\n", i, val);
+		ASSERT(val == i, "Value did not match!");
+	}
+
+	mc_release(list);
 	return success;
 }

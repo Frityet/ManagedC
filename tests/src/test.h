@@ -20,8 +20,8 @@ struct Test {
 	Test_f *test;
 };
 
-#define TEST(t) static bool _##t##_test(void); const struct Test __test_##t = { #t, _##t##_test }; static bool _##t##_test(void)
-#define declare_test(t) extern struct Test __test_##t; struct Test t = __test_##t
+#define declaretest(t) static bool _##t##_test(void); const struct Test __test_##t = { #t, _##t##_test }; static bool _##t##_test(void)
+#define TESTNAME(t) __test_##t
 
 static bool assert(bool expr, const char *err, const char *strexpr, const char *file, int line, const char *func)
 {

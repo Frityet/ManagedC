@@ -4,22 +4,23 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+
 int main(int argc, const char *argv[])
 {
-	unsigned long i = 0;
-	declare_test(alloc);
-	declare_test(realloc);
+	unsigned long int i = 0;
+	struct Test tests[4];
 
-	struct Test tests[] = {
-		alloc,
-		realloc
-	};
+	extern struct Test TESTNAME(alloc), TESTNAME(realloc), TESTNAME(list), TESTNAME(string);
+	tests[0] = TESTNAME(alloc);
+	tests[1] = TESTNAME(realloc);
+	tests[2] = TESTNAME(list);
+	tests[3] = TESTNAME(string);
 
-	puts(argv[1]);
-	if (strcmp(argv[1], "all") == 0) {
+	if (strcmp(argv[1], "all") == 0 || argc < 1) {
 		for (i = 0; i < (sizeof(tests) / sizeof(tests[0])); i++) {
 			printf("Running test %s...\n", tests[i].name);
-			if (!tests[i].test()) {
+			if (tests[i].test() == failure) {
 				fprintf(stderr, "Failed test \"%s\"!\n", tests[i].name);
 				return EXIT_FAILURE;
 			}
@@ -30,7 +31,7 @@ int main(int argc, const char *argv[])
 
 	for (i = 0; i < (sizeof(tests) / sizeof(tests[0])); i++) {
 		if (strcmp(tests[i].name, argv[1]) == 0) {
-			if (!tests[i].test()) {
+			if (tests[i].test() == failure) {
 				fprintf(stderr, "Failed test \"%s\"!\n", tests[i].name);
 				return EXIT_FAILURE;
 			}

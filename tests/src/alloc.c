@@ -4,7 +4,7 @@
 #include "managed.h"
 #include "test.h"
 
-TEST(alloc)
+declaretest(alloc)
 {
 	int *val = NULL;
 
@@ -13,7 +13,7 @@ TEST(alloc)
 		ASSERT(i != NULL, "Could not allocate 4 bytes!");
 
 		*i = 512;
-		val = mc_ref(i);
+		val = mc_reference(i);
 		mc_release(i);
 	}
 

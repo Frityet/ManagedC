@@ -86,9 +86,10 @@ struct managed_PointerInfo {
 #define mc_countof(ptr) (managed_info_of(ptr)->count)
 mc_inline const struct managed_PointerInfo *mc_nullable managed_info_of(const void *mc_nonnull ptr)
 {
+	struct managed_PointerInfo *info = NULL;
+	
 	if (ptr == NULL || (uintptr_t)ptr < MC_GUARDPAGE_MAX) return NULL;
-
-	struct managed_PointerInfo *info = (struct managed_PointerInfo *)ptr - 1;
+	info = (struct managed_PointerInfo *)ptr - 1;
 	if (info->data != ptr)
 		return NULL;
 
@@ -134,7 +135,7 @@ static void *mc_nullable managed_copy(const void *ptr, long int count)
 	return alloc;
 }
 
-#define mc_ref(ptr) MC_EXPAND((mc_typeof(ptr)))managed_reference(ptr)
+#define mc_reference(ptr) MC_EXPAND((mc_typeof(ptr)))managed_reference(ptr)
 static void *managed_reference(const void *mc_nonnull ptr)
 {
 	struct managed_PointerInfo *info = (void *)managed_info_of(ptr);

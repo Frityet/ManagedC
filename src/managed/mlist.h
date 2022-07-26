@@ -48,7 +48,7 @@ static int managed_list_push(const void *ptr, const void *data)
 
 	_mcinternal_ptrinfo(*list)->count = ldata.count + 1;
 
-	MC_MEMCPY(*list + ldata.count, data, ldata.typesize);
+	MC_MEMCPY(((unsigned char *)*list) + ldata.count, data, ldata.typesize);
 
 	return 0;
 }
@@ -59,18 +59,19 @@ static int managed_list_pop(const void *ptr, unsigned long int index)
 	mlist(void) *list = ptr;
 	struct managed_PointerInfo ldata = *_mcinternal_ptrinfo(*list);
 	unsigned long int i = 0, c = 0;
-	if (index < 0) index = ldata.count;
-	if (index >= ldata.count) return 2; /*Index out of bounds*/
 
 	void *newalloc = managed_allocate(ldata.capacity, ldata.typesize, ldata.free, NULL);
 	if (newalloc == NULL) return 1; /*Failed allocation*/
+
+	if (index < 0) index = ldata.count;
+	if (index >= ldata.count) return 2; /*Index out of bounds*/
 
 	_mcinternal_ptrinfo(newalloc)->count = ldata.count - 1;
 
 	for (i = 0; i < ldata.count; i++) {
 		if (i == index) continue;
 
-		MC_MEMCPY(newalloc + i * ldata.typesize, *list + i * ldata.typesize, ldata.typesize);
+		MC_MEMCPY(((unsigned char *)newalloc) + i * ldata.typesize, ((unsigned char *)*list) + i * ldata.typesize, ldata.typesize);
 		c++; /* lol */
 	}
 
@@ -80,12 +81,13 @@ static int managed_list_pop(const void *ptr, unsigned long int index)
 	return 0;
 }
 
-static void *managed_list_get(void *ptr, unsigned long int index)
+#define mlist_get(list, index) MC_EXPAND((typeof((*list)[0]) *)) managed_list_get((void *)list, index)
+static void *managed_list_get(const void *ptr, unsigned long int index)
 {
 	mlist(void) *list = ptr;
 	struct managed_PointerInfo *ldata = _mcinternal_ptrinfo(*list);
 	if (index >= ldata->count) return NULL;
-	return *list + index * ldata->typesize;
+	return ((unsigned char *) *list) + (index * ldata->typesize);
 }
 
 static int managed_list_set(void *ptr, unsigned long int index, void *data)
@@ -93,7 +95,7 @@ static int managed_list_set(void *ptr, unsigned long int index, void *data)
 	mlist(void) *list = ptr;
 	struct managed_PointerInfo *ldata = _mcinternal_ptrinfo(*list);
 	if (index >= ldata->count) return 2; /*Index out of bounds*/
-	MC_MEMCPY(*list + index * ldata->typesize, data, ldata->typesize);
+	MC_MEMCPY(((unsigned char *) *list) + index * ldata->typesize, data, ldata->typesize);
 	return 0;
 }
 
