@@ -38,12 +38,13 @@ static mstring *mc_nullable managed_string_duplicate(const mstring *mc_nonnull s
 #define mstrcat(str1, str2) managed_string_concatenate(str1, str2)
 static mstring *mc_nullable managed_string_concatenate(const mstring *mc_nonnull s1, const mstring *mc_nonnull s2)
 {
+	mstring *s = NULL;
 	long int s1len = managed_string_length(s1), s2len = managed_string_length(s2), total;
 	if (s1len == -1) s1len = strlen(s1);
 	if (s2len == -1) s2len = strlen(s2);
 	total = s1len + s2len;
 
-	mstring *s = managed_allocate(total + 1, sizeof(char), NULL, s1);
+	s = managed_allocate(total + 1, sizeof(char), NULL, s1);
 	if (s == NULL) return NULL;
 
 	memcpy((char *)(s + s1len), s2, s2len);

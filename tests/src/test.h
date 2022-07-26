@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include "managed/mstring.h"
+#include "managed/mlist.h"
 
 #undef bool
 #undef true

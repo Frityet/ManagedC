@@ -7,6 +7,10 @@
 #include <errno.h>
 extern int errno;
 
+#if !defined(MC_GUARDPAGE_MAX)
+#	define MC_GUARDPAGE_MAX ((uintptr_t)0x1000)
+#endif
+
 #if !defined(MC_ALLOCATOR)
 # 	define MC_ALLOCATOR(c, s) calloc(c, s)
 #endif
@@ -22,13 +26,11 @@ extern int errno;
 #if defined(__STRICT_ANSI__)
 #	define mc_nullable
 # 	define mc_nonnull 
-#	define mc_attribute(...)
-#	if !defined(defer)
-#		define defer
-#	endif
+#	define mc_attribute(t)
+#	define mc_defer
 #	define mc_typeof(T) 
 #	define mc_inline static
-# 	define MC_EXPAND(...)
+# 	define MC_EXPAND(t)
 #else
 # 	define MC_EXPAND(...) __VA_ARGS__
 #	define mc_typeof(T) typeof(T)
@@ -37,18 +39,25 @@ extern int errno;
 #	if defined(__clang__) && defined(__llvm__)
 #		define mc_nullable _Nullable
 # 		define mc_nonnull _Nonnull
+# 		define mc_nocapture __block
+# 		define mc_defer mc_attribute(cleanup(_mc_rundefer)) void (^_mc_##__LINE__##_deferexpr)(void) = ^ 
+mc_inline void _mc_rundefer(void (^cb)(void))
+{
+	cb();
+}
+
 #	else
 #		define mc_nullable 	
 # 		define mc_nonnull 	
-#		define defer
-#		define nocapture
+#		define mc_defer
+#		define mc_nocapture
 #	endif
 #endif
 
 #if defined(__STRICT_ANSI__)
-#	define auto 		"Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!"
+#	define mc_auto "Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!";
 #else 
-#	define managed_auto mc_attribute(cleanup(managed_release_ptr))
+#	define mc_auto mc_attribute(cleanup(managed_release_ptr))
 # 	define MANAGED_HAS_AUTO
 #endif
 
@@ -74,8 +83,11 @@ struct managed_PointerInfo {
 	void *mc_nonnull data;
 };
 
-mc_inline const struct managed_PointerInfo *mc_nullable managed_info_of(const void *ptr)
+#define mc_countof(ptr) (managed_info_of(ptr)->count)
+mc_inline const struct managed_PointerInfo *mc_nullable managed_info_of(const void *mc_nonnull ptr)
 {
+	if (ptr == NULL || (uintptr_t)ptr < MC_GUARDPAGE_MAX) return NULL;
+
 	struct managed_PointerInfo *info = (struct managed_PointerInfo *)ptr - 1;
 	if (info->data != ptr)
 		return NULL;
@@ -123,15 +135,15 @@ static void *mc_nullable managed_copy(const void *ptr, long int count)
 }
 
 #define mc_ref(ptr) MC_EXPAND((mc_typeof(ptr)))managed_reference(ptr)
-static void *managed_reference(void *mc_nonnull ptr)
+static void *managed_reference(const void *mc_nonnull ptr)
 {
 	struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
 	info->reference_count++;
-	return ptr;
+	return (void *)ptr;
 }
 
 #define mc_release(ptr) managed_free(ptr)
-static void managed_free(void *mc_nonnull ptr)
+static void managed_free(const void *mc_nonnull ptr)
 {
 	struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
 	unsigned long int i = 0;
@@ -140,7 +152,7 @@ static void managed_free(void *mc_nonnull ptr)
 	if (info->reference_count < 1) {
 		if (info->free != NULL) {
 			for (i = 0; i < info->count; i++) {
-				info->free(ptr + i * info->typesize);
+				info->free(((unsigned char *)ptr) + i * info->typesize);
 			}
 		}
 		
