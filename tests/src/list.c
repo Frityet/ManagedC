@@ -17,11 +17,10 @@ declaretest(list)
 	ASSERT(mlist_length(list) == (1 << 16), "Count did not match!");
 
 
-	for (i = 0; i < (1 << 8); i++) 
+	for (i = 0; i < (1 << 16); i++) 
 	{
 		size_t val = *(size_t *)mlist_get(list, i);
-		printf("%lu: %lu\n", i, val);
-		/*ASSERT(val == i, "Value did not match!");*/
+		ASSERT(val == i, "Value did not match!");
 	}
 
 	mc_free(list);

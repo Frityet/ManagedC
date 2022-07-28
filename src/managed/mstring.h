@@ -39,13 +39,11 @@ static mstring *mc_nullable managed_string_duplicate(mstring *mc_nonnull str)
 	return managed_string(str, length);
 }
 
-#define mstrcat(str1, str2) managed_string_concatenate(str1, str2)
-static mstring *mc_nullable managed_string_concatenate(mstring *mc_nonnull s1, mstring *mc_nonnull s2)
+#define mstrcat(str1, str2) managed_string_concatenate(str1, str2, managed_string_length(str2) < 0 ? strlen(str2) : managed_string_length(str2))
+static mstring *mc_nullable managed_string_concatenate(mstring *mc_nonnull s1, mstring *mc_nonnull s2, size_t s2len)
 {
 	mstring *s = NULL;
-	long int s1len = managed_string_length(s1), s2len = managed_string_length(s2), total;
-	if (s1len == -1) s1len = strlen(s1);
-	if (s2len == -1) s2len = strlen(s2);
+	long int s1len = managed_string_length(s1), total;
 	total = s1len + s2len;
 
 	s = managed_allocate(total + 1, sizeof(char), NULL, s1);

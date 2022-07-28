@@ -10,7 +10,6 @@
 
 #define _mcinternal_ptrinfo(ptr) ((struct managed_PointerInfo *)managed_info_of(ptr))
 
-
 static void managed_list_free(const mlist(void) *list)
 {
 	managed_release(*list);
@@ -56,6 +55,8 @@ static int managed_list_push(const void *ptr, const void *data)
 
 		newallocinfo = _mcinternal_ptrinfo(newalloc);
 		newallocinfo->count = oldc;
+
+		MC_MEMCPY(newalloc, *list, listinfo.typesize * oldc);
 
 		managed_release(*list);
 		*((void **)list) = newalloc;

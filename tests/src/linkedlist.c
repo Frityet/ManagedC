@@ -9,10 +9,7 @@ declaretest(linkedlist)
 	mllist_add(list, mstr("World!"), 7);
 	mllist_add(list, mstr("!"), 1);
 
-	for (i = 0; i < *list->count; i++) {
-		mstring *str = mllist_get(list, i);
-		printf("%lull: %s\n", i, str);
-	}
+	ASSERT(*list->count == 3, "Count did not match!");
 
 	mc_free(list);
 	return success;

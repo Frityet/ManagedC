@@ -65,6 +65,8 @@ mc_inline void _mc_rundefer(void (^cb)(void))
 # 	define MANAGED_HAS_AUTO
 #endif
 
+#define _mcinternal_ptrinfo(ptr) ((struct managed_PointerInfo *)managed_info_of(ptr))
+
 typedef void managed_Free_f(void *mc_nonnull alloc);
 
 struct managed_PointerInfo {

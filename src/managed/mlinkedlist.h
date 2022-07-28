@@ -1,9 +1,9 @@
-#include "managed/mlist.h"
-#include <string.h>
 #if !defined(MANAGEDC_LINKEDLIST)
 #define MANAGEDC_LINKEDLIST
 
 #include "managed.h"
+
+#define _mcinternal_ptrinfo(ptr) ((struct managed_PointerInfo *)managed_info_of(ptr))
 
 struct managed_Node {
 	struct managed_Node *mc_nullable next, *mc_nullable previous;
@@ -13,12 +13,13 @@ struct managed_Node {
 struct managed_LinkedList {
 	struct managed_Node 	*mc_nullable head, *mc_nullable tail;
 	managed_Free_f 			*mc_nullable free;
-	const size_t *mc_nonnull const count;
+	const size_t 			*mc_nonnull const count;
 };
 
 static void managed_linkedlist_free(struct managed_LinkedList *mc_nonnull list)
 {
 	struct managed_Node *node = list->head;
+	
 	while (node != NULL) {
 		struct managed_Node *next = node->next;
 		if (list->free != NULL) {
@@ -26,16 +27,22 @@ static void managed_linkedlist_free(struct managed_LinkedList *mc_nonnull list)
 		}
 		node = next;
 	}
+	
+	_mcinternal_ptrinfo(list)->count = 0; /* Causes the rest of the items to be skipped */
 }
 
 #define mllist_new(free) managed_linkedlist((managed_Free_f *) free)
 static struct managed_LinkedList *managed_linkedlist(managed_Free_f *free)
 {
-	struct managed_LinkedList *list = mc_new(struct managed_LinkedList, managed_list_free);
+	struct managed_LinkedList *list = mc_new(struct managed_LinkedList, managed_linkedlist_free);
 	const size_t **ptr = NULL;
 	if (list == NULL) return NULL;
 	ptr = (void *)&list->count;
 	*ptr = &mc_countof(list);
+
+	_mcinternal_ptrinfo(list)->count = 0;
+
+	list->free = free;
 
 	return list;
 }
@@ -55,6 +62,9 @@ static int managed_linkedlist_add(struct managed_LinkedList *list, const void *d
 		list->head = node;
 	}
 	list->tail = node;
+
+	_mcinternal_ptrinfo(list)->count++;
+
 	return 0;
 }
 
@@ -79,6 +89,9 @@ static void managed_linkedlist_remove(struct managed_LinkedList *list, size_t in
 	} else {
 		list->tail = node->previous;
 	}
+
+	_mcinternal_ptrinfo(list)->count--;
+
 	managed_release(node);
 }
 

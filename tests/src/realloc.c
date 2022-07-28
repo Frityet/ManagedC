@@ -1,4 +1,3 @@
-#include "managed.h"
 #include "test.h"
 
 declaretest(realloc)
