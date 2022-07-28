@@ -168,4 +168,16 @@ static void managed_release(const void *mc_nonnull ptr)
 	}
 }
 
+static void *managed_to_unmanaged(const void *mc_nonnull ptr)
+{
+	struct managed_PointerInfo *info = _mcinternal_ptrinfo(ptr);
+	void *unmanaged = MC_ALLOCATOR(info->count + 1, info->typesize); /* +1 just in case its a string */
+	if (unmanaged == NULL) return NULL;
+
+	MC_MEMCPY(unmanaged, ptr, info->count * info->typesize);
+	return unmanaged;
+}
+
+#undef _mcinternal_ptrinfo
+
 #endif
