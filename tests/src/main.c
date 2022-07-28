@@ -8,22 +8,24 @@
 
 int main(int argc, const char *argv[])
 {
-	unsigned long int i = 0;
-	struct Test tests[4];
+	size_t i = 0;
+	struct Test tests[5];
 
-	extern struct Test TESTNAME(alloc), TESTNAME(realloc), TESTNAME(list), TESTNAME(string);
+	extern struct Test TESTNAME(alloc), TESTNAME(realloc), TESTNAME(list), TESTNAME(string), TESTNAME(linkedlist);
 	tests[0] = TESTNAME(alloc);
 	tests[1] = TESTNAME(realloc);
 	tests[2] = TESTNAME(list);
 	tests[3] = TESTNAME(string);
+	tests[4] = TESTNAME(linkedlist);
 
 	if (strcmp(argv[1], "all") == 0 || argc < 1) {
 		for (i = 0; i < (sizeof(tests) / sizeof(tests[0])); i++) {
-			printf("Running test %s...\n", tests[i].name);
+			printf("Running test %s...", tests[i].name);
 			if (tests[i].test() == failure) {
-				fprintf(stderr, "Failed test \"%s\"!\n", tests[i].name);
+				fprintf(stderr, "\x1b[31m[Fail]\x1b[0m\n");
 				return EXIT_FAILURE;
 			}
+			printf("\x1b[32m[Success]\x1b[0m\n");
 		}
 		puts("Success!");
 		return EXIT_SUCCESS;

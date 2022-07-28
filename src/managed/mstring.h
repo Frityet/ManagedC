@@ -12,7 +12,7 @@
 typedef const char mstring;
 
 #define mstr(str) managed_string(str, strlen(str))
-static mstring *mc_nullable managed_string(const char *mc_nonnull str, unsigned long int len)
+static mstring *mc_nullable managed_string(const char *mc_nonnull str, size_t len)
 {
 	mstring *s = managed_allocate(len + 1, sizeof(char), NULL, str);
 
@@ -57,8 +57,9 @@ static mstring *mc_nullable managed_string_concatenate(mstring *mc_nonnull s1, m
 	return s;
 }
 
-#define mstrcmp(str1, str2) (!managed_string_compare(str1, str2, managed_string_length(str2) == -1 ? strlen(str2) : managed_string_length(str2)))
-static int managed_string_compare(mstring *mc_nonnull s1, const char *mc_nonnull s2, long int s2len)
+
+#define mstreq(str1, str2) managed_string_equals(str1, str2, managed_string_length(str2) == -1 ? strlen(str2) : managed_string_length(str2))
+static int managed_string_equals(mstring *mc_nonnull s1, const char *mc_nonnull s2, long int s2len)
 {
 	long int s1len = managed_string_length(s1), i = 0;
 	if (s1len == -1) s1len = strlen(s1);

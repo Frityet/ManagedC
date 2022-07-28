@@ -6,6 +6,7 @@
 
 #include "managed/mstring.h"
 #include "managed/mlist.h"
+#include "managed/mlinkedlist.h"
 
 #undef bool
 #undef true
@@ -26,7 +27,7 @@ struct Test {
 static bool assert(bool expr, const char *err, const char *strexpr, const char *file, int line, const char *func)
 {
 	if (!expr) {
-		fprintf(stderr, "Could not execute expression {%s} located at [%s:%d - %s]\nError: %s\n", strexpr, file, line, func, err);
+		fprintf(stderr, "Assertion { %s } failed located at [%s:%d - %s]\nError: %s\n", strexpr, file, line, func, err);
 		return false;
 	}
 	return true;

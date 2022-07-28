@@ -19,6 +19,10 @@ extern int errno;
 #	define MC_MEMCPY(dst, src, nmemb) memcpy(dst, src, nmemb)
 #endif
 
+#if !defined(MC_MEMMOVE)
+#	define MC_MEMMOVE(dst, src, nmemb) memmove(dst, src, nmemb)
+#endif
+
 #if !defined(MC_FREE)
 # 	define MC_FREE(ptr) free(ptr)
 #endif
@@ -70,7 +74,7 @@ struct managed_PointerInfo {
 	 * typesize: Size of the type.
 	 * reference_count: Number of references to this pointer.
 	 */
-	unsigned long int count, capacity, typesize, reference_count;
+	size_t count, capacity, typesize, reference_count;
 
 	/**
 	* Function to call on 0 references.
@@ -97,9 +101,9 @@ mc_inline const struct managed_PointerInfo *mc_nullable managed_info_of(const vo
 }
 
 #define mc_new(T, free) (T *)managed_allocate(1, sizeof(T), (managed_Free_f *)free, NULL)
-static void *mc_nullable managed_allocate(unsigned long int count, unsigned long int typesize, managed_Free_f *mc_nullable free, const void *mc_nullable data)
+static void *mc_nullable managed_allocate(size_t count, size_t typesize, managed_Free_f *mc_nullable free, const void *mc_nullable data)
 {
-	unsigned long int total = sizeof(struct managed_PointerInfo) + count * typesize;
+	size_t total = sizeof(struct managed_PointerInfo) + count * typesize;
 
 	struct managed_PointerInfo *info = MC_ALLOCATOR(1, total);
 	if (info == NULL) return NULL;
@@ -144,11 +148,11 @@ static void *managed_reference(const void *mc_nonnull ptr)
 	return (void *)ptr;
 }
 
-#define mc_free(ptr) managed_free(ptr)
-static void managed_free(const void *mc_nonnull ptr)
+#define mc_free(ptr) managed_release(ptr)
+static void managed_release(const void *mc_nonnull ptr)
 {
 	struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
-	unsigned long int i = 0;
+	size_t i = 0;
 	
 	info->reference_count--;
 	if (info->reference_count < 1) {
