@@ -66,7 +66,7 @@ void _mc_rundefer(void (^cb)(void))
 #else 
 static void managed_release_ptr(void *addr)
 {
-	void managed_release(const void *mc_nonnull ptr);
+	extern void managed_release(const void *mc_nonnull ptr);
 	void **ptr = addr;
 	if (*ptr)
 	{
