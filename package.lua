@@ -15,7 +15,7 @@ package("managedc")
     add_versions("1.4.1", "19ace17f26460e2a2aa6969414b499c2a8f2964d")
     add_versions("1.4.2", "b12303b3d5d26097554efbd05930b47030fe4711")
     add_versions("1.5.0", "f4cce9c1aee952d603c18b73dc6219ea15b91717")
-    add_versions("2.0.0-beta", "5ed06e3901d36b226a108b66d9a2ffed2e871f1a")
+    add_versions("2.0.0-beta", "a70cd323f7bfa32a3fe30c7deb14515d2a09a197")
 
 
     on_install(function (package)
