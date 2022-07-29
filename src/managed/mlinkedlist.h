@@ -23,7 +23,7 @@ static void managed_linkedlist_free(struct managed_LinkedList *mc_nonnull list)
 	while (node != NULL) {
 		struct managed_Node *next = node->next;
 		if (list->free != NULL) {
-			list->free(node->data);
+			list->free((void *)node->data);
 		}
 		node = next;
 	}
@@ -47,13 +47,13 @@ static struct managed_LinkedList *managed_linkedlist(managed_Free_f *free)
 	return list;
 }
 
-#define mllist_add(list, data, size) managed_linkedlist_add(list, data, size)
-static int managed_linkedlist_add(struct managed_LinkedList *list, const void *data, size_t size)
+#define mllist_add(list, data) managed_linkedlist_add(list, (void *)data)
+static int managed_linkedlist_add(struct managed_LinkedList *list, void *data)
 {
 	struct managed_Node *node = mc_new(struct managed_Node, NULL);
 	if (node == NULL) return 1;
 
-	node->data = managed_allocate(1, size, NULL, data);
+	node->data = data;
 	node->next = NULL;
 	node->previous = list->tail;
 	if (list->tail != NULL) {
