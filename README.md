@@ -195,10 +195,10 @@ int main()
 }
 ```
 
-### Datastructures
+## Datastructures
 
 ManagedC also comes with reference counted common datastructures, with the list still growing
-
+You can see them [here](src/managed/)
 
 ### TODO
 - [x] Safer and better thread support   - [issue](https://github.com/Frityet/ManagedC/issues/1)
