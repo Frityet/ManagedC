@@ -66,10 +66,11 @@ void _mc_rundefer(void (^cb)(void))
 #else 
 static void managed_release_ptr(void *addr)
 {
+	static void managed_release(const void *mc_nonnull ptr)
 	void **ptr = addr;
 	if (*ptr)
 	{
-		mc_free(*ptr);
+		managed_release(*ptr);
 		*ptr = NULL;
 	}
 }
