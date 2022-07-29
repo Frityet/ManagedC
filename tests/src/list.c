@@ -5,6 +5,7 @@
 
 declaretest(list)
 {
+	
 	mlist(size_t) *list = mlist_new(size_t, NULL);
 	size_t i = 0, listlen = 0;
 
