@@ -15,6 +15,7 @@ package("managedc")
     add_versions("1.4.1", "19ace17f26460e2a2aa6969414b499c2a8f2964d")
     add_versions("1.4.2", "b12303b3d5d26097554efbd05930b47030fe4711")
     add_versions("1.5.0", "f4cce9c1aee952d603c18b73dc6219ea15b91717")
+    add_versions("2.0.0-beta", "6eddc07d9842c6f74e039ad5376329b6e717143f")
 
 
     on_install(function (package)
@@ -22,6 +23,6 @@ package("managedc")
     end)
 
     on_test(function (package)
-         assert(package:has_cfuncs("mc_alloc_managed", { includes = "managed.h" }))
-         assert(package:has_cfuncs("mc_managed_string", { includes = "mstring.h" }))
+         assert(package:has_cfuncs("managed_alloc", { includes = "managed.h" }))
+         assert(package:has_cfuncs("managed_string", { includes = "managed/mstring.h" }))
     end)
