@@ -4,8 +4,13 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <errno.h>
 extern int errno;
+
+#if !defined(MC_UINTPTR)
+typedef unsigned long int uintptr_t;
+#endif
 
 #if !defined(MC_GUARDPAGE_MAX)
 #	define MC_GUARDPAGE_MAX ((uintptr_t)0x1000)
@@ -33,19 +38,18 @@ extern int errno;
 #	define mc_attribute(t)
 #	define mc_defer
 #	define mc_typeof(T) 
-#	define mc_inline static
+#	define static
 # 	define MC_EXPAND(t)
 #else
 # 	define MC_EXPAND(...) __VA_ARGS__
 #	define mc_typeof(T) typeof(T)
 #	define mc_attribute(...) __attribute__((__VA_ARGS__))
-#	define mc_inline inline __attribute__((always_inline))
 #	if defined(__clang__) && defined(__llvm__)
 #		define mc_nullable _Nullable
 # 		define mc_nonnull _Nonnull
 # 		define mc_nocapture __block
 # 		define mc_defer mc_attribute(cleanup(_mc_rundefer)) void (^_mc_##__LINE__##_deferexpr)(void) = ^ 
-mc_inline void _mc_rundefer(void (^cb)(void))
+void _mc_rundefer(void (^cb)(void))
 {
 	cb();
 }
@@ -90,7 +94,7 @@ struct managed_PointerInfo {
 };
 
 #define mc_countof(ptr) (managed_info_of(ptr)->count)
-mc_inline const struct managed_PointerInfo *mc_nullable managed_info_of(const void *mc_nonnull ptr)
+const struct managed_PointerInfo *mc_nullable managed_info_of(const void *mc_nonnull ptr)
 {
 	struct managed_PointerInfo *info = NULL;
 	
