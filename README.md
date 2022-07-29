@@ -99,7 +99,7 @@ The pointer will not be freed until all the references are not in use.
 
 int *func_that_allocs(void)
 {
-    int *mem = mc_alloc_managed(sizeof(int), 128, NULL, NULL);
+    int *mem = managed_alloc(sizeof(int), 128, NULL, NULL);
 
     return mem;
 }
