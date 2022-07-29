@@ -64,6 +64,15 @@ void _mc_rundefer(void (^cb)(void))
 #if defined(__STRICT_ANSI__)
 #	define mc_auto "Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!";
 #else 
+static void managed_release_ptr(void **ptr)
+{
+	if (*ptr)
+	{
+		mc_free(*ptr);
+		*ptr = NULL;
+	}
+}
+
 #	define mc_auto mc_attribute(cleanup(managed_release_ptr))
 # 	define MANAGED_HAS_AUTO
 #endif
