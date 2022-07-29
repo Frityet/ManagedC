@@ -37,8 +37,7 @@ typedef unsigned long int uintptr_t;
 # 	define mc_nonnull 
 #	define mc_attribute(t)
 #	define mc_defer
-#	define mc_typeof(T) 
-#	define static
+#	define mc_typeof(T)
 # 	define MC_EXPAND(t)
 #else
 # 	define MC_EXPAND(...) __VA_ARGS__
@@ -94,7 +93,7 @@ struct managed_PointerInfo {
 };
 
 #define mc_countof(ptr) (managed_info_of(ptr)->count)
-const struct managed_PointerInfo *mc_nullable managed_info_of(const void *mc_nonnull ptr)
+static const struct managed_PointerInfo *mc_nullable managed_info_of(const void *mc_nonnull ptr)
 {
 	struct managed_PointerInfo *info = NULL;
 	

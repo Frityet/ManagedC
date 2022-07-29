@@ -10,6 +10,7 @@ int main(int argc, const char *argv[])
 {
 	size_t i = 0;
 	struct Test tests[5];
+	const char *opt = NULL;
 
 	extern struct Test TESTNAME(alloc), TESTNAME(realloc), TESTNAME(list), TESTNAME(string), TESTNAME(linkedlist);
 	tests[0] = TESTNAME(alloc);
@@ -17,6 +18,9 @@ int main(int argc, const char *argv[])
 	tests[2] = TESTNAME(list);
 	tests[3] = TESTNAME(string);
 	tests[4] = TESTNAME(linkedlist);
+
+	if (argc < 1) opt = "all";
+	else opt = argv[1];
 
 	if (strcmp(argv[1], "all") == 0 || argc < 1) {
 		for (i = 0; i < (sizeof(tests) / sizeof(tests[0])); i++) {

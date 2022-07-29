@@ -33,6 +33,7 @@ static bool assert(bool expr, const char *err, const char *strexpr, const char *
 	return true;
 }
 
+#pragma GCC diagnostic push "-Wpedantic"
 #define ASSERT(expr, msg) do { if (!assert((expr), msg, #expr, __FILE__, __LINE__, __PRETTY_FUNCTION__)) return failure; } while (0)
 
 #endif

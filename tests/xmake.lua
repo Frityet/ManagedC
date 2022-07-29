@@ -1,9 +1,12 @@
 add_rules("mode.debug", "mode.release")
 
 local CFLAGS = {
-    "-Wall", "-Wextra", "-Werror", "-Wpedantic",
+    "-Wall", "-Wextra", 
+    --"-Werror", 
+    "-Wpedantic",
     sanitizers = "address,leak,undefined",
     "-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-unused-function", "-Wno-unused-but-set-variable",
+    "-ansi"
 }
 
 set_languages("c89")
