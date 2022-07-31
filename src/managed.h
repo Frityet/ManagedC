@@ -165,10 +165,13 @@ static void *managed_reference(const void *mc_nonnull ptr)
 }
 
 #define mc_free(ptr) managed_release(ptr)
-static void managed_release(const void *mc_nonnull ptr)
+static void managed_release(const void *ptr)
 {
-	struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
+	struct managed_PointerInfo *info = NULL;
 	size_t i = 0;
+
+	if (ptr == NULL) return;
+	info = (void *)managed_info_of(ptr);
 	
 	info->reference_count--;
 	if (info->reference_count < 1) {
