@@ -14,6 +14,7 @@ struct managed_LinkedList {
 	struct managed_Node 	*mc_nullable head, *mc_nullable tail;
 	managed_Free_f 			*mc_nullable free;
 	const size_t 			*mc_nonnull const count;
+	size_t 					typesize;
 };
 
 static void managed_linkedlist_free(struct managed_LinkedList *mc_nonnull list)
@@ -22,9 +23,7 @@ static void managed_linkedlist_free(struct managed_LinkedList *mc_nonnull list)
 	
 	while (node != NULL) {
 		struct managed_Node *next = node->next;
-		if (list->free != NULL) {
-			list->free((void *)node->data);
-		}
+		mc_free(node->data);
 		node = next;
 	}
 	
@@ -32,7 +31,7 @@ static void managed_linkedlist_free(struct managed_LinkedList *mc_nonnull list)
 }
 
 #define mllist_new(free) managed_linkedlist((managed_Free_f *) free)
-static struct managed_LinkedList *managed_linkedlist(managed_Free_f *free)
+static struct managed_LinkedList *managed_linkedlist(managed_Free_f *free, size_t typesize)
 {
 	struct managed_LinkedList *list = mc_new(struct managed_LinkedList, managed_linkedlist_free);
 	const size_t **ptr = NULL;
@@ -43,6 +42,7 @@ static struct managed_LinkedList *managed_linkedlist(managed_Free_f *free)
 	_mcinternal_ptrinfo(list)->count = 0;
 
 	list->free = free;
+	list->typesize = typesize;
 
 	return list;
 }
@@ -53,7 +53,7 @@ static int managed_linkedlist_add(struct managed_LinkedList *list, void *data)
 	struct managed_Node *node = mc_new(struct managed_Node, NULL);
 	if (node == NULL) return 1;
 
-	node->data = data;
+	node->data = managed_from_pointer(data, 1, list->typesize, list->free);
 	node->next = NULL;
 	node->previous = list->tail;
 	if (list->tail != NULL) {
