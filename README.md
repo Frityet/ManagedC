@@ -145,7 +145,7 @@ struct managed_PointerInfo {
 ```
 It can be accessed by using
 ```c
-mc_inline const struct managed_PointerInfo *mc_nullable managed_info_of(const void *mc_nonnull ptr)
+const struct managed_PointerInfo *mc_nullable managed_info_of(const void *mc_nonnull ptr)
 ```
 
 As `count` is the most common field you will probably access, you can call
