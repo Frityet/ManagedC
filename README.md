@@ -113,8 +113,9 @@ int main()
         *array = 10;
         refarray[0] = mc_reference(array); //Will not be deallocateed because we got a reference
         mc_free(array);
-    }
-    //all deallocated at the end of the scope
+	}
+	
+	mc_free(refarray);
 }
 ```
 
