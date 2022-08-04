@@ -1,6 +1,6 @@
 # ManagedC
 
-Library to add a reference-counter GC to C. See [`tests/src/`](tests/src) for examples
+Library to add a reference-counter to C. See [`tests/src/`](tests/src) for examples
 
 > |ℹ️ Note ℹ️        |
 > |-----------------|
