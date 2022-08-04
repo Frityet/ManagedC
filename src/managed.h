@@ -146,7 +146,7 @@ static void *mc_nullable managed_allocate(size_t count, size_t typesize, managed
 	return info->data;
 }
 
-#define mptr(obj, free) managed_from_pointer(ptr, 1, sizeof(*ptr), free)
+#define mptr(obj, free) managed_from_pointer((obj), 1, sizeof(*(obj)), free)
 /**
 * Creates a managed pointer without allocating extra space
 */
