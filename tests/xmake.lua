@@ -10,8 +10,8 @@ local CFLAGS = {
 }
 
 if ANSI then 
-    CFLAGS[#CFLAGS + 1] = "-ansi"
-    CFLAGS[#CFLAGS + 1] = "-Wpedantic"
+    -- CFLAGS[#CFLAGS + 1] = "-ansi"
+    -- CFLAGS[#CFLAGS + 1] = "-Wpedantic"
 end
 
 if ANSI then 
