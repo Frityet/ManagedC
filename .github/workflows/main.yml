@@ -33,6 +33,6 @@ jobs:
         run: xmake build -rvwD tests
 
       - name: test
-        run: xmake run -vwD tests
+        run: xmake run -vwD tests all
   
       
