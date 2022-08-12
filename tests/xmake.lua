@@ -1,4 +1,4 @@
-local ANSI<const> = false
+local ANSI<const> = true
 
 add_rules("mode.debug", "mode.release")
 
