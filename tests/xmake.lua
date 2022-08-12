@@ -6,6 +6,7 @@ local CFLAGS = {
     "-Wall", "-Wextra", "-Werror",
     sanitizers = "address,leak,undefined",
     "-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-unused-function", "-Wno-unused-but-set-variable",
+    "-Wno-array-bounds"
 }
 
 if ANSI then 
