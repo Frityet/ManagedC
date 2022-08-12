@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <errno.h>
-extern int errno;
 
 #if !defined(MC_UINTPTR)
 typedef unsigned long int uintptr_t;
@@ -41,17 +39,17 @@ typedef unsigned long int uintptr_t;
 # 	define MC_EXPAND(t)
 #else
 # 	define MC_EXPAND(...) __VA_ARGS__
+#	define MC_concat2(x) _mc_##x##_deferepr
+#	define MC_concat1(x) MC_concat2(x)
+
 #	define mc_typeof(T) typeof(T)
 #	define mc_attribute(...) __attribute__((__VA_ARGS__))
 #	if defined(__clang__) && defined(__llvm__)
 #		define mc_nullable _Nullable
 # 		define mc_nonnull _Nonnull
 # 		define mc_nocapture __block
-# 		define mc_defer mc_attribute(cleanup(_mc_rundefer)) void (^_mc_##__LINE__##_deferexpr)(void) = ^ 
-void _mc_rundefer(void (^cb)(void))
-{
-	cb();
-}
+# 		define mc_defer mc_attribute(cleanup(_mc_rundefer)) void (^mc_nonnull MC_concat1(__LINE__))(void) = ^ 
+static void _mc_rundefer(void (^mc_nonnull *mc_nonnull cb)(void)) { (*cb)(); }
 
 #	else
 #		define mc_nullable 	
@@ -65,7 +63,7 @@ void _mc_rundefer(void (^cb)(void))
 #	define mc_auto "Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!";
 #else 
 static void managed_release(const void *mc_nonnull ptr);
-static void managed_release_ptr(void *addr)
+static void managed_release_ptr(void *mc_nonnull addr)
 {
 	void **ptr = addr;
 	if (*ptr)
@@ -168,7 +166,7 @@ static void *mc_nullable managed_from_pointer(void *mc_nonnull ptr, size_t count
 /**
 * Creates a copy of the managed pointer. This copies every byte of data in the allocation
 */
-static void *mc_nullable managed_copy(const void *ptr, long int count)
+static void *mc_nullable managed_copy(const void *mc_nonnull ptr, long int count)
 {
 	struct managed_PointerInfo 	*info = (void *)managed_info_of(ptr),
 								*allocinfo = NULL;
@@ -189,7 +187,7 @@ static void *mc_nullable managed_copy(const void *ptr, long int count)
 /**
 * Gets a reference to the ptr, and incrememnts it's reference count
 */
-static void *managed_reference(const void *mc_nonnull ptr)
+static void *mc_nonnull managed_reference(const void *mc_nonnull ptr)
 {
 	struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
 	info->reference_count++;
@@ -223,7 +221,7 @@ static void managed_release(const void *mc_nonnull ptr)
 /**
 * Creates a new, non-managed, allocation and copies all the data to it
 */
-static void *managed_to_unmanaged(const void *mc_nonnull ptr)
+static void *mc_nullable managed_to_unmanaged(const void *mc_nonnull ptr)
 {
 	struct managed_PointerInfo *info = _mcinternal_ptrinfo(ptr);
 	void *unmanaged = MC_ALLOCATOR(info->count + 1, info->typesize); /* +1 just in case its a string */

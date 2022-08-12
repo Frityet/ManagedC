@@ -9,9 +9,11 @@ declaretest(list)
 	mlist(size_t) *list = mlist_new(size_t, NULL);
 	size_t i = 0, listlen = 0;
 
+	float f = 5;
+
 	ASSERT(list != NULL, "Could not allocate list!");
 	for (i = 0; i < (1 << 16); i++) 
-		mlist_push(list, &i);
+		mlist_push(list, &f);
 
 	listlen = mlist_length(list);
 

@@ -14,7 +14,6 @@ struct managed_LinkedList {
 	struct managed_Node 	*mc_nullable head, *mc_nullable tail;
 	managed_Free_f 			*mc_nullable free;
 	const size_t 			*mc_nonnull const count;
-	size_t 					typesize;
 };
 
 static void managed_linkedlist_free(struct managed_LinkedList *mc_nonnull list)
@@ -31,7 +30,7 @@ static void managed_linkedlist_free(struct managed_LinkedList *mc_nonnull list)
 }
 
 #define mllist_new(free) managed_linkedlist((managed_Free_f *) free)
-static struct managed_LinkedList *managed_linkedlist(managed_Free_f *free, size_t typesize)
+static struct managed_LinkedList *mc_nullable managed_linkedlist(managed_Free_f *mc_nullable free)
 {
 	struct managed_LinkedList *list = mc_new(struct managed_LinkedList, managed_linkedlist_free);
 	const size_t **ptr = NULL;
@@ -42,18 +41,18 @@ static struct managed_LinkedList *managed_linkedlist(managed_Free_f *free, size_
 	_mcinternal_ptrinfo(list)->count = 0;
 
 	list->free = free;
-	list->typesize = typesize;
+	
 
 	return list;
 }
 
-#define mllist_add(list, data) managed_linkedlist_add(list, (void *)data)
-static int managed_linkedlist_add(struct managed_LinkedList *list, void *data)
+#define mllist_add(list, data, size) managed_linkedlist_add(list, (void *)data, size)
+static int managed_linkedlist_add(struct managed_LinkedList *mc_nonnull list, void *mc_nonnull data, size_t size)
 {
 	struct managed_Node *node = mc_new(struct managed_Node, NULL);
 	if (node == NULL) return 1;
 
-	node->data = managed_from_pointer(data, 1, list->typesize, list->free);
+	node->data = managed_from_pointer(data, 1, size, list->free);
 	node->next = NULL;
 	node->previous = list->tail;
 	if (list->tail != NULL) {
@@ -69,7 +68,7 @@ static int managed_linkedlist_add(struct managed_LinkedList *list, void *data)
 }
 
 #define mllist_remove(list, node) managed_linkedlist_remove(list, node)
-static void managed_linkedlist_remove(struct managed_LinkedList *list, long int index)
+static void managed_linkedlist_remove(struct managed_LinkedList *mc_nonnull list, long int index)
 {
 	struct managed_Node *node = list->head;
 
@@ -96,7 +95,7 @@ static void managed_linkedlist_remove(struct managed_LinkedList *list, long int 
 }
 
 #define mllist_get(list, index) managed_linkedlist_get(list, index)
-static void *managed_linkedlist_get(struct managed_LinkedList *list, long int index)
+static void *mc_nullable managed_linkedlist_get(struct managed_LinkedList *mc_nonnull list, long int index)
 {
 	struct managed_Node *node = list->head;
 	if (index < 0) return NULL;
@@ -109,7 +108,7 @@ static void *managed_linkedlist_get(struct managed_LinkedList *list, long int in
 }
 
 #define mllist_set(list, index, data, size) managed_linkedlist_set(list, index, data, size)
-static int managed_linkedlist_set(struct managed_LinkedList *list, long int index, const void *data, size_t size)
+static int managed_linkedlist_set(struct managed_LinkedList *mc_nonnull list, long int index, const void *mc_nonnull data, size_t size)
 {
 	struct managed_Node *node = list->head;
 	if (index < 0) return 1;

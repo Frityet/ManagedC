@@ -6,9 +6,9 @@ declaretest(linkedlist)
 	struct managed_LinkedList *list = mllist_new(managed_release);
 	size_t i = 0;
 
-	mllist_add(list, mstr("Hello, "));
-	mllist_add(list, mstr("World"));
-	mllist_add(list, mstr("!"));
+	mllist_add(list, mstr("Hello, "), sizeof("Hello, "));
+	mllist_add(list, mstr("World"), sizeof("Worlf"));
+	mllist_add(list, mstr("!"), sizeof("!"));
 
 	ASSERT(*list->count == 3, "Count did not match!");
 

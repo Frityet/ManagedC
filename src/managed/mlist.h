@@ -10,6 +10,8 @@
 
 #define _mcinternal_ptrinfo(ptr) ((struct managed_PointerInfo *)managed_info_of(ptr))
 
+#define MC_ASSERT_IS_MLIST(obj) (mlist(mc_typeof(**obj)) *)obj
+
 static void managed_list_free(const mlist(void) *list)
 {
 	managed_release(*list);
@@ -38,7 +40,11 @@ static mlist(void) *managed_list(size_t typesize, size_t count, managed_Free_f *
 	return list;
 }
 
-#define mlist_push(list, data) managed_list_push(list, data)
+#if defined(__STRICT_ANSI__)
+#	define mlist_push(list, data) managed_list_push(list, data)
+#else
+# 	define mlist_push(list, data) managed_list_push(MC_ASSERT_IS_MLIST(list), (mc_typeof(*list)) data)
+#endif
 static int managed_list_push(const void *ptr, const void *data)
 {
 	mlist(void) *list = ptr;
@@ -68,7 +74,11 @@ static int managed_list_push(const void *ptr, const void *data)
 	return 0;
 }
 
-#define mlist_pop(list, index) managed_list_pop(list, index)
+#if defined (__STRICT_ANSI__)
+#	define mlist_pop(list, index) managed_list_pop(list, index)
+#else
+#	define mlist_pop(list, index) managed_list_pop(MC_ASSERT_IS_MLIST(list), index)
+#endif
 static int managed_list_pop(const void *ptr, size_t index)
 {
 	mlist(void) *list = ptr;
@@ -82,7 +92,11 @@ static int managed_list_pop(const void *ptr, size_t index)
 	return 0;
 }
 
-#define mlist_get(list, index) MC_EXPAND((typeof((*list)[0]) *)) managed_list_get((void *)list, index)
+#if defined (__STRICT_ANSI__)
+#	define mlist_get(list, index) managed_list_get(list, index)
+#else
+#	define mlist_get(list, index) (mc_typeof(*list))managed_list_get(MC_ASSERT_IS_MLIST(list), index)
+#endif
 static void *managed_list_get(const void *ptr, size_t index)
 {
 	mlist(void) *list = ptr;
@@ -92,7 +106,11 @@ static void *managed_list_get(const void *ptr, size_t index)
 	return ((unsigned char *)*list) + index * listinfo->typesize;
 }
 
-#define mlist_set(list, index, data) managed_list_set((void *)list, index, data)
+#if defined(__STRICT_ANSI__)
+#	define mlist_set(list, index, data) managed_list_set(list, index, data)
+#else
+#	define mlist_set(list, index, data) managed_list_set(MC_ASSERT_IS_MLIST(list), index, (mc_typeof(*list))data)
+#endif
 static int managed_list_set(void *ptr, size_t index, void *data)
 {
 	mlist(void) *list = ptr;
@@ -103,7 +121,7 @@ static int managed_list_set(void *ptr, size_t index, void *data)
 	return 0;
 }
 
-#define mlist_copy
+#define mlist_copy(list) (mlist(mc_typeof(**list)) *)managed_list_copy(MC_ASSERT_IS_MLIST(list))
 static mlist(void) *managed_list_copy(const void *ptr)
 {
 	mlist(void) *list = ptr;
