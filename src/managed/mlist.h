@@ -49,12 +49,11 @@ static int managed_list_push(const void *ptr, const void *data)
 {
 	mlist(void) *list = ptr;
 	struct managed_PointerInfo *listinfo_ptr = _mcinternal_ptrinfo(*list), listinfo;
-	volatile size_t s = *(size_t *)data;
 	if (listinfo_ptr == NULL) return 1;
 	listinfo = *listinfo_ptr; /*We need the copy or else we would start accessing potentially freed memory*/
 
 	if (listinfo.count >= listinfo.capacity) {
-		size_t newcap = listinfo.capacity * 2, oldc = listinfo.count;
+        size_t newcap = (size_t)listinfo.capacity * 1.5, oldc = listinfo.count;
 		void *newalloc = managed_allocate(newcap, listinfo.typesize, listinfo.free, NULL);
 		struct managed_PointerInfo *newallocinfo = NULL; 
 		if (newalloc == NULL) return 1;

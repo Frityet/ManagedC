@@ -8,7 +8,7 @@
 #define defer mc_defer
 #define nocapture mc_nocapture
 
-declaretest(mc_defer)
+declaretest(mcdefer)
 {
 	#if defined (__STRICT_ANSI__) || !(defined(__clang__) && defined (__llvm__))
 	return success;

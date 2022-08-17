@@ -4,7 +4,7 @@
 
 #define auto mc_auto
 
-declaretest(mc_auto)
+declaretest(mcauto)
 {
 	#if defined (__STRICT_ANSI__)
 	return success;

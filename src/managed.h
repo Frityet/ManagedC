@@ -102,15 +102,18 @@ struct managed_PointerInfo {
 };
 
 
-#define mc_countof(ptr) (managed_info_of(ptr)->count)
+#define mc_countof(ptr)     (managed_info_of(ptr) == NULL ? -1 : managed_info_of(ptr)->count)
+#define mc_sizeof_type(ptr) (managed_info_of(ptr) == NULL ? -1 : managed_info_of(ptr)->typesize)
+#define mc_sizeof(ptr)      (mc_countof(ptr) == -1 ? -1 : mc_countof(ptr) * mc_sizeof_type(ptr))
 /**
 * Gets the metadata about the pointer
 */
 static const struct managed_PointerInfo *mc_nullable managed_info_of(const void *mc_nonnull ptr)
 {
 	struct managed_PointerInfo *info = NULL;
-	
-	if (ptr == NULL || (uintptr_t)ptr < MC_GUARDPAGE_MAX) return NULL;
+
+    /*Check if the pointer is lesser than the max page, which *probably* means that it is not on the heap*/
+	if ((uintptr_t)ptr < MC_GUARDPAGE_MAX) return NULL;
 	info = (struct managed_PointerInfo *)ptr - 1;
 	if (info->data != ptr)
 		return NULL;
@@ -118,70 +121,46 @@ static const struct managed_PointerInfo *mc_nullable managed_info_of(const void 
 	return info;
 }
 
-#define mc_new(T, free) (T *)managed_allocate(1, sizeof(T), (managed_Free_f *)free, NULL)
-#define mc_array(T, count, free) (T *)managed_allocate(count, sizeof(T), (managed_Free_f *)free, NULL)
+#define mc_new(T, free) (T *)managed_allocate(1, sizeof(T), (managed_Free_f *)(free), NULL)
+#define mc_array(T, count, free) (T *)managed_allocate(count, sizeof(T), (managed_Free_f *)(free), NULL)
 /**
 * Creates a new allocation with the managed pointer metadata. Define MC_ALLOCATOR(c, nmemb) to change the allocation function
 */
 static void *mc_nullable managed_allocate(size_t count, size_t typesize, managed_Free_f *mc_nullable free, const void *mc_nullable data)
 {
-	size_t total = sizeof(struct managed_PointerInfo) + count * typesize;
-
-	struct managed_PointerInfo *info = MC_ALLOCATOR(1, total);
+	struct managed_PointerInfo *info = MC_ALLOCATOR(1, sizeof(struct managed_PointerInfo) + count * typesize);
 	if (info == NULL) return NULL;
 	
-	info->count 			= count;
-	info->capacity 			= count;
-	info->typesize 			= typesize;
-	info->free 				= free;
-	info->reference_count 	= 1;
-	/* No need to make 2 allocations, just make a big one and assign the address to be after this ptr */
-	info->data 				= info + 1;
+	info->capacity = info->count    = count;
+	info->typesize 			        = typesize;
+	info->free 				        = free;
+	info->reference_count 	        = 1;
+	/* The data must be right after the metadata */
+	info->data 				        = info + 1;
 
-	if (data != NULL) 
+	if (data != NULL)
 		MC_MEMCPY(info->data, data, count * typesize);
 
 	return info->data;
 }
 
-#define mptr(obj, free) managed_from_pointer((obj), 1, sizeof(*(obj)), free)
-/**
-* Creates a managed pointer without allocating extra space
-*/
-static void *mc_nullable managed_from_pointer(void *mc_nonnull ptr, size_t count, size_t typesize, managed_Free_f *mc_nullable free)
-{
-	struct managed_PointerInfo *info = MC_ALLOCATOR(1, sizeof(struct managed_PointerInfo));
 
-	info->count 			= count;
-	info->capacity			= count;
-	info->typesize 			= typesize;
-	info->free 				= free;
-	info->reference_count 	= 1;
-	info->data 				= ptr;
-
-	return info->data;
-}
-
-#define mc_dup(ptr) managed_dup(ptr, managed_info_of(ptr)->count)
 /**
 * Creates a copy of the managed pointer. This copies every byte of data in the allocation
 */
-static void *mc_nullable managed_copy(const void *mc_nonnull ptr, long int count)
+static void *mc_nullable managed_copy(const void *mc_nonnull ptr, size_t count)
 {
 	struct managed_PointerInfo 	*info = (void *)managed_info_of(ptr),
 								*allocinfo = NULL;
-								
-	void *alloc = NULL; 
-	if (count < 1) count = info->count;
-	alloc = managed_allocate(count, info->typesize, info->free, NULL);
+	void *alloc = NULL;
+	if (count < 1 || count > info->count) count = info->count;
+	alloc = managed_allocate(count, info->typesize, info->free, ptr);
 	if (alloc == NULL) return NULL;
-	allocinfo = (void *)managed_info_of(ptr);
-
-	allocinfo->count = info->count;
-	MC_MEMCPY(alloc, ptr, info->count * info->typesize);
 
 	return alloc;
 }
+static void *mc_nullable mc_dup(const void *mc_nonnull ptr)
+{ return managed_copy(ptr, managed_info_of(ptr)->count); }
 
 #define mc_ref(ptr) MC_EXPAND((mc_typeof(ptr)))managed_reference(ptr)
 /**
@@ -194,7 +173,6 @@ static void *mc_nonnull managed_reference(const void *mc_nonnull ptr)
 	return (void *)ptr;
 }
 
-#define mc_free(ptr) managed_release(ptr)
 /**
 * Releases a reference to the pointer, and if 0 references, frees the pointer
 */
@@ -208,15 +186,15 @@ static void managed_release(const void *mc_nonnull ptr)
 	
 	info->reference_count--;
 	if (info->reference_count < 1) {
-		if (info->free != NULL) {
-			for (i = 0; i < info->count; i++) {
-				info->free(((unsigned char *)ptr) + i * info->typesize);
-			}
-		}
-		
+		if (info->free != NULL)
+			for (i = 0; i < info->count; i++) /* Free each item of the allocation individually */
+                info->free(((unsigned char *)ptr) + i * info->typesize);
+
 		MC_FREE(info);
 	}
 }
+static void mc_free(const void *mc_nonnull ptr)
+{ managed_release(ptr); }
 
 /**
 * Creates a new, non-managed, allocation and copies all the data to it
@@ -224,7 +202,7 @@ static void managed_release(const void *mc_nonnull ptr)
 static void *mc_nullable managed_to_unmanaged(const void *mc_nonnull ptr)
 {
 	struct managed_PointerInfo *info = _mcinternal_ptrinfo(ptr);
-	void *unmanaged = MC_ALLOCATOR(info->count + 1, info->typesize); /* +1 just in case its a string */
+	void *unmanaged = MC_ALLOCATOR(info->count + 1, info->typesize); /* +1 just in case it's a string */
 	if (unmanaged == NULL) return NULL;
 
 	MC_MEMCPY(unmanaged, ptr, info->count * info->typesize);

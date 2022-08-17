@@ -24,9 +24,6 @@ target("tests")
 do
     set_kind("binary")
     add_files("src/**.c")
-    if ANSI then
-        remove_files("src/auto.c")
-    end
 
     add_cflags(CFLAGS, "-fsanitize=" .. CFLAGS.sanitizers, "-fno-omit-frame-pointer")
     add_ldflags("-fsanitize=" .. CFLAGS.sanitizers)

@@ -29,37 +29,41 @@ static void managed_linkedlist_free(struct managed_LinkedList *mc_nonnull list)
 	_mcinternal_ptrinfo(list)->count = 0; /* Causes the rest of the items to be skipped */
 }
 
-#define mllist_new(free) managed_linkedlist((managed_Free_f *) free)
-static struct managed_LinkedList *mc_nullable managed_linkedlist(managed_Free_f *mc_nullable free)
+#define mllist_new(T, free) managed_linkedlist(sizeof(T), (managed_Free_f *) free)
+static struct managed_LinkedList *mc_nullable managed_linkedlist(size_t typesize, managed_Free_f *mc_nullable free)
 {
 	struct managed_LinkedList *list = mc_new(struct managed_LinkedList, managed_linkedlist_free);
 	const size_t **ptr = NULL;
 	if (list == NULL) return NULL;
 	ptr = (void *)&list->count;
-	*ptr = &mc_countof(list);
+	*ptr = &_mcinternal_ptrinfo(list)->count;
 
-	_mcinternal_ptrinfo(list)->count = 0;
+	_mcinternal_ptrinfo(list)->count    = 0;
+    _mcinternal_ptrinfo(list)->typesize = typesize;
 
 	list->free = free;
-	
 
 	return list;
 }
 
-#define mllist_add(list, data, size) managed_linkedlist_add(list, (void *)data, size)
-static int managed_linkedlist_add(struct managed_LinkedList *mc_nonnull list, void *mc_nonnull data, size_t size)
+#define mllist_add(list, data) managed_linkedlist_add(list, (void *)(data))
+static int managed_linkedlist_add(struct managed_LinkedList *mc_nonnull list, void *mc_nonnull data)
 {
+    size_t tsiz = mc_sizeof_type(list);
 	struct managed_Node *node = mc_new(struct managed_Node, NULL);
 	if (node == NULL) return 1;
 
-	node->data = managed_from_pointer(data, 1, size, list->free);
+	node->data = managed_allocate(1, tsiz, list->free, data);
+    if (node->data == NULL) {
+        mc_free(node);
+        return 1;
+    }
+
 	node->next = NULL;
 	node->previous = list->tail;
-	if (list->tail != NULL) {
-		list->tail->next = node;
-	} else {
-		list->head = node;
-	}
+	if (list->tail != NULL) list->tail->next = node;
+	else list->head = node;
+
 	list->tail = node;
 
 	_mcinternal_ptrinfo(list)->count++;
@@ -107,18 +111,17 @@ static void *mc_nullable managed_linkedlist_get(struct managed_LinkedList *mc_no
 	return node->data;
 }
 
-#define mllist_set(list, index, data, size) managed_linkedlist_set(list, index, data, size)
-static int managed_linkedlist_set(struct managed_LinkedList *mc_nonnull list, long int index, const void *mc_nonnull data, size_t size)
+#define mllist_set(list, index, data) managed_linkedlist_set(list, index, data)
+static int managed_linkedlist_set(struct managed_LinkedList *mc_nonnull list, size_t index, const void *mc_nonnull data)
 {
 	struct managed_Node *node = list->head;
-	if (index < 0) return 1;
-	if (index >= (long int)*list->count) return 1;
+    if (index >= *list->count) return 1;
 
 	while (index-- > 0) {
 		node = node->next;
 	}
-	managed_release(node->data);
-	node->data = managed_allocate(1, size, NULL, data);
+	mc_free(node->data);
+	node->data = managed_allocate(1, mc_sizeof_type(list), NULL, data);
 	return 0;
 }
 
