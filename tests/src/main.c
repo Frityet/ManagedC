@@ -30,7 +30,7 @@ int main()
 	}
 
 	if (failc > 0) {
-        fprintf(stderr, "\x1b[31mFailed %zu tests!\x1b[0m\n", failc);
+        fprintf(stderr, "\x1b[31mFailed %ld tests!\x1b[0m\n", failc);
         return EXIT_FAILURE;
     }
     printf("\x1b[32mSuccessfully ran all tests!\x1b[0m\n");
