@@ -38,7 +38,7 @@ jobs:
           xmake build -rvwD tests
 
       - name: test
-        run: xmake run -vwD tests all
+        run: xmake run -vw tests
 
       - name: configure-release
         run:
@@ -50,6 +50,6 @@ jobs:
 
       - name: test
         run: 
-          xmake run -vwD tests
+          xmake run -vw tests
   
       
