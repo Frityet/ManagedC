@@ -30,7 +30,19 @@ typedef unsigned long int mc_uintptr_t;
 # 	define MC_FREE(ptr) free(ptr)
 #endif
 
-#if !defined(__GNUC__)
+#if !defined(__GNUC__) || defined(__STRICT_ANSI__)
+#	define MC_ANSI 1
+#else
+#	define MC_ANSI 0
+#endif
+
+#if defined(__clang__) && defined(__llvm__) && !defined(MC_ANSI)
+#	define MC_LLVM 1
+#else
+#	define MC_LLVM 0
+#endif
+
+#if MC_ANSI
 #	define mc_nullable
 # 	define mc_nonnull 
 #	define mc_attribute(t)
@@ -44,7 +56,7 @@ typedef unsigned long int mc_uintptr_t;
 
 #	define mc_typeof(T) __typeof__(T)
 #	define mc_attribute(...) __attribute__((__VA_ARGS__))
-#	if defined(__clang__) && defined(__llvm__)
+#	if MC_LLVM
 #		define mc_nullable _Nullable
 # 		define mc_nonnull _Nonnull
 # 		define mc_nocapture __block
@@ -59,7 +71,7 @@ static void _mc_rundefer(void (^mc_nonnull *mc_nonnull cb)(void)) { (*cb)(); }
 #	endif
 #endif
 
-#if !defined(__GNUC__)
+#if !MC_ANSI
 #	define mc_auto Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!
 #else 
 static void managed_release(const void *mc_nonnull ptr);
@@ -89,6 +101,8 @@ struct managed_PointerInfo {
 	 * reference_count: Number of references to this pointer.
 	 */
 	size_t count, capacity, typesize, reference_count;
+
+	unsigned char lock;
 
 	/**
 	* Function to call on 0 references.

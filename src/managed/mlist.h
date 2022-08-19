@@ -3,20 +3,20 @@
 
 #include "managed.h"
 
-#if defined(__GNUC__)
-#	define mlist(T) mc_typeof(T *const)
-#else
+#if MC_ANSI
 #	define mlist(T) T *const
+#else
+#	define mlist(T) mc_typeof(T *const)
 #endif
 
 #define _mcinternal_ptrinfo(ptr) ((struct managed_PointerInfo *)managed_info_of(ptr))
 
-#if defined(__GNUC__)
-    #define MC_ASSERT_IS_MLIST(list) (({ mlist(__typeof__(**list)) *_list_test_t_ = list; _list_test_t_; }))
-    #define MC_ASSERT_DATA_TYPE(list, obj) (({ __typeof__(**list) _obj_test_t_ = *(obj); (obj); }))
-#else
+#if MC_ANSI
     #define MC_ASSERT_IS_MLIST(obj) (obj)
     #define MC_ASSERT_DATA_TYPE(list, obj) (obj)
+#else
+    #define MC_ASSERT_IS_MLIST(list) (({ mlist(__typeof__(**list)) *_list_test_t_ = list; _list_test_t_; }))
+    #define MC_ASSERT_DATA_TYPE(list, obj) (({ __typeof__(**list) _obj_test_t_ = *(obj); (obj); }))
 #endif
 
 static void managed_list_free(const mlist(void) *list)
@@ -58,7 +58,7 @@ static mlist(void) *managed_list(size_t typesize, size_t count, managed_Free_f *
 	return list;
 }
 
-#if defined(__STRICT_ANSI__)
+#if MC_ANSI
 #	define mlist_add(list, data) managed_list_add(list, data)
 #else
 # 	define mlist_add(list, data) managed_list_add(MC_ASSERT_IS_MLIST(list), MC_ASSERT_DATA_TYPE(list, data))
@@ -95,7 +95,7 @@ static int managed_list_add(const void *ptr, const void *data)
 	return 0;
 }
 
-#if defined (__STRICT_ANSI__)
+#if MC_ANSI
 #	define mlist_rm(list, index) managed_list_remove(list, index)
 #else
 #	define mlist_rm(list, index) managed_list_remove(MC_ASSERT_IS_MLIST(list), index)
@@ -113,7 +113,7 @@ static int managed_list_remove(const void *ptr, size_t index)
 	return 0;
 }
 
-#if !defined (__GNUC__)
+#if MC_ANSI
 #	define mlist_get(list, index) managed_list_get(list, index)
 #else
 #	define mlist_get(list, index) (mc_typeof(*list))managed_list_get(MC_ASSERT_IS_MLIST(list), index)
@@ -127,7 +127,7 @@ static void *managed_list_get(const void *ptr, size_t index)
 	return ((unsigned char *)*list) + index * listinfo->typesize;
 }
 
-#if !defined(__GNUC__)
+#if MC_ANSI
 #	define mlist_set(list, index, data) managed_list_set(list, index, data)
 #else
 #	define mlist_set(list, index, data) managed_list_set(MC_ASSERT_IS_MLIST(list), index, MC_ASSERT_DATA_TYPE(list, data))
@@ -142,7 +142,7 @@ static int managed_list_set(const void *ptr, size_t index, void *data)
 	return 0;
 }
 
-#if !defined(__GNUC__)
+#if MC_ANSI
 #	define mlist_copy(list) managed_list_copy(list)
 #else
 #	define mlist_copy(list) (mlist(mc_typeof(**list)) *)managed_list_copy(MC_ASSERT_IS_MLIST(list))

@@ -6,7 +6,8 @@
 #include "managed.h"
 
 #if !defined(MSTRING_CHAR_T) && !defined(mc_char_t)
-typedef char mc_char_t;
+#define MSTRING_CHAR_T char
+typedef MSTRING_CHAR_T mc_char_t;
 #endif
 
 typedef mc_char_t mstring;
