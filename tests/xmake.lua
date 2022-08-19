@@ -1,4 +1,4 @@
-local ANSI<const> = true
+local ANSI<const> = false
 
 add_rules("mode.debug", "mode.release")
 
@@ -27,8 +27,6 @@ do
 
     add_cflags(CFLAGS, "-fsanitize=" .. CFLAGS.sanitizers, "-fno-omit-frame-pointer")
     add_ldflags("-fsanitize=" .. CFLAGS.sanitizers)
-
-    
 
     add_deps("ManagedC")
 end

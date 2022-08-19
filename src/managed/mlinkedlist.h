@@ -13,7 +13,7 @@ struct managed_Node {
 struct managed_LinkedList {
 	struct managed_Node 	*mc_nullable head, *mc_nullable tail;
 	managed_Free_f 			*mc_nullable free;
-	const size_t 			*mc_nonnull const count;
+	const mc_atomic size_t  *mc_nonnull const count;
 };
 
 static void managed_linkedlist_free(struct managed_LinkedList *mc_nonnull list)
@@ -33,7 +33,7 @@ static void managed_linkedlist_free(struct managed_LinkedList *mc_nonnull list)
 static struct managed_LinkedList *mc_nullable managed_linkedlist(size_t typesize, managed_Free_f *mc_nullable free)
 {
 	struct managed_LinkedList *list = mc_new(struct managed_LinkedList, managed_linkedlist_free);
-	const size_t **ptr = NULL;
+	const mc_atomic size_t **ptr = NULL;
 	if (list == NULL) return NULL;
 	ptr = (void *)&list->count;
 	*ptr = &_mcinternal_ptrinfo(list)->count;

@@ -29,7 +29,7 @@ static mstring *mc_nullable managed_string(const mc_char_t *mc_nonnull str, size
 
 	return s;
 }
-static mstring *mstr(const mc_char_t *mc_nonnull str)
+static mstring *mc_nullable mstr(const mc_char_t *mc_nonnull str)
 { return managed_string(str, strlen(str)); }
 
 
@@ -76,8 +76,8 @@ static mstring *mc_nullable managed_string_concatenate(mstring *mc_nonnull s1, c
 static int managed_string_equals(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2, size_t s2len)
 {
 	long int s1len = mstrlen(s1), i = 0;
-	if (s1len == -1) s1len = strlen(s1);
-	if (s1len != s2len) return 0;
+	if (s1len == -1) s1len = (long int)strlen(s1);
+	if (s1len != (long int)s2len) return 0;
 
 	for (i = 0; i < s1len; i++)
 		if (((mc_char_t *)s1)[i] != ((mc_char_t *)s2)[i]) return 0;
@@ -94,6 +94,8 @@ static int mstreq(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2)
 
     for (i = 0; i < s1len; i++)
         if (((mc_char_t *)s1)[i] != ((mc_char_t *)s2)[i]) return 0;
+
+    return 1;
 }
 
 static int mstrneq(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2, size_t s2len)

@@ -30,6 +30,12 @@ typedef unsigned long int uintptr_t;
 # 	define MC_FREE(ptr) free(ptr)
 #endif
 
+#if __STDC_VERSION__ >= 201112L
+    #define mc_atomic _Atomic
+#else
+    #define mc_atomic
+#endif
+
 #if defined(__STRICT_ANSI__)
 #	define mc_nullable
 # 	define mc_nonnull 
@@ -42,7 +48,7 @@ typedef unsigned long int uintptr_t;
 #	define MC_concat2(x) _mc_##x##_deferepr
 #	define MC_concat1(x) MC_concat2(x)
 
-#	define mc_typeof(T) typeof(T)
+#	define mc_typeof(T) __typeof__(T)
 #	define mc_attribute(...) __attribute__((__VA_ARGS__))
 #	if defined(__clang__) && defined(__llvm__)
 #		define mc_nullable _Nullable
@@ -88,7 +94,7 @@ struct managed_PointerInfo {
 	 * typesize: Size of the type.
 	 * reference_count: Number of references to this pointer.
 	 */
-	size_t count, capacity, typesize, reference_count;
+	mc_atomic size_t count, capacity, typesize, reference_count;
 
 	/**
 	* Function to call on 0 references.
@@ -101,10 +107,6 @@ struct managed_PointerInfo {
 	void *mc_nonnull data;
 };
 
-
-#define mc_countof(ptr)     (managed_info_of(ptr) == NULL ? -1 : managed_info_of(ptr)->count)
-#define mc_sizeof_type(ptr) (managed_info_of(ptr) == NULL ? -1 : managed_info_of(ptr)->typesize)
-#define mc_sizeof(ptr)      (mc_countof(ptr) == -1 ? -1 : mc_countof(ptr) * mc_sizeof_type(ptr))
 /**
 * Gets the metadata about the pointer
 */
@@ -119,6 +121,27 @@ static const struct managed_PointerInfo *mc_nullable managed_info_of(const void 
 		return NULL;
 
 	return info;
+}
+
+static long int mc_countof(const void *mc_nonnull ptr)
+{
+    const struct managed_PointerInfo *info = managed_info_of(ptr);
+    if (info == NULL) return -1;
+    else return info->count;
+}
+
+static long int mc_sizeof_type(const void *mc_nonnull ptr)
+{
+    const struct managed_PointerInfo *info = managed_info_of(ptr);
+    if (info == NULL) return -1;
+    else return info->typesize;
+}
+
+static long int mc_sizeof(const void *mc_nonnull ptr)
+{
+    long int c = mc_countof(ptr);
+    if (c == -1) return -1;
+    return c * mc_sizeof_type(ptr);
 }
 
 #define mc_new(T, free) (T *)managed_allocate(1, sizeof(T), (managed_Free_f *)(free), NULL)

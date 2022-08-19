@@ -3,14 +3,21 @@
 
 #include "managed.h"
 
-#define mlist(T) T *const
-
-#define mlist_length(list) 		(mc_countof(*list))
-#define mlist_capacity(list) 	(_mcinternal_ptrinfo(*list)->capacity)
+#if defined(__STRICT_ANSI__)
+    #define mlist(T) T *const
+#else
+    #define mlist(T) mc_typeof(T *const)
+#endif
 
 #define _mcinternal_ptrinfo(ptr) ((struct managed_PointerInfo *)managed_info_of(ptr))
 
-#define MC_ASSERT_IS_MLIST(obj) (mlist(mc_typeof(**obj)) *)obj
+#if defined(__GNUC__)
+    #define MC_ASSERT_IS_MLIST(list) (({ mlist(__typeof__(**list)) *_list_test_t_ = list; _list_test_t_; }))
+    #define MC_ASSERT_DATA_TYPE(list, obj) (({ __typeof__(**list) _obj_test_t_ = *(obj); (obj); }))
+#else
+    #define MC_ASSERT_IS_MLIST(obj) (mlist(mc_typeof(**obj)) *)obj
+    #define MC_ASSERT_DATA_TYPE(list, obj) (mc_typeof(*list)list)
+#endif
 
 static void managed_list_free(const mlist(void) *list)
 {
@@ -20,10 +27,13 @@ static void managed_list_free(const mlist(void) *list)
 #define mlist_new(type, free) (mlist(type) *)managed_list(sizeof(type), 2, free, NULL)
 static mlist(void) *managed_list(size_t typesize, size_t count, managed_Free_f *free, void *data)
 {
+    /* If we try and reallocate a pointer by itself, all existing references will break. */
+    /* To fix this for our list, we must allocate a pointer which will hold a pointer to the actual array */
 	void **list = managed_allocate(1, sizeof(void *), (managed_Free_f *)&managed_list_free, NULL);
 	size_t cap = 0;
 	if (list == NULL) return NULL;
 
+    /* Make sure it's even */
 	cap = count < 2 ? 2 : count % 2 == 0 ? count : count + 1;
 	*list = managed_allocate(cap, typesize, free, NULL);
 	if (*list == NULL) {
@@ -43,7 +53,7 @@ static mlist(void) *managed_list(size_t typesize, size_t count, managed_Free_f *
 #if defined(__STRICT_ANSI__)
 #	define mlist_push(list, data) managed_list_push(list, data)
 #else
-# 	define mlist_push(list, data) managed_list_push(MC_ASSERT_IS_MLIST(list), (mc_typeof(*list)) data)
+# 	define mlist_push(list, data) managed_list_push(MC_ASSERT_IS_MLIST(list), MC_ASSERT_DATA_TYPE(list, data))
 #endif
 static int managed_list_push(const void *ptr, const void *data)
 {
