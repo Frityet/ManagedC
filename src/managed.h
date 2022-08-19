@@ -66,7 +66,7 @@ static void _mc_rundefer(void (^mc_nonnull *mc_nonnull cb)(void)) { (*cb)(); }
 #endif
 
 #if defined(__STRICT_ANSI__)
-#	define mc_auto "Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!";
+#	define mc_auto Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!
 #else 
 static void managed_release(const void *mc_nonnull ptr);
 static void managed_release_ptr(void *mc_nonnull addr)
@@ -176,14 +176,18 @@ static void *mc_nullable managed_copy(const void *mc_nonnull ptr, size_t count)
 	struct managed_PointerInfo 	*info = (void *)managed_info_of(ptr),
 								*allocinfo = NULL;
 	void *alloc = NULL;
-	if (count < 1 || count > info->count) count = info->count;
-	alloc = managed_allocate(count, info->typesize, info->free, ptr);
+	if (count < 1) count = info->count;
+	alloc = managed_allocate(count, info->typesize, info->free,NULL);
 	if (alloc == NULL) return NULL;
+
+	/* Just in case count is larger than mc_countof(ptr) (sizing up an allocation), make sure you only copy the existing data */
+	MC_MEMCPY(alloc, ptr, mc_sizeof_type(ptr) * mc_countof(ptr));
 
 	return alloc;
 }
+
 static void *mc_nullable mc_dup(const void *mc_nonnull ptr)
-{ return managed_copy(ptr, managed_info_of(ptr)->count); }
+{ return managed_copy(ptr, mc_countof(ptr)); }
 
 #define mc_ref(ptr) MC_EXPAND((mc_typeof(ptr)))managed_reference(ptr)
 /**

@@ -4,15 +4,16 @@
 #include <setjmp.h>
 #include <stdio.h>
 
-#define auto mc_auto
-#define defer mc_defer
-#define nocapture mc_nocapture
-
 declaretest(mcdefer)
 {
 	#if defined (__STRICT_ANSI__) || !(defined(__clang__) && defined (__llvm__))
 	return success;
 	#else
+
+#	define auto mc_auto
+#	define defer mc_defer
+#	define nocapture mc_nocapture
+
 	nocapture bool fail = false;
 	auto int *buf = mc_array(int, _JBLEN, NULL);
 	nocapture int jmp = setjmp(buf);

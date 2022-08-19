@@ -15,13 +15,16 @@
     #define MC_ASSERT_IS_MLIST(list) (({ mlist(__typeof__(**list)) *_list_test_t_ = list; _list_test_t_; }))
     #define MC_ASSERT_DATA_TYPE(list, obj) (({ __typeof__(**list) _obj_test_t_ = *(obj); (obj); }))
 #else
-    #define MC_ASSERT_IS_MLIST(obj) (mlist(mc_typeof(**obj)) *)obj
-    #define MC_ASSERT_DATA_TYPE(list, obj) (mc_typeof(*list)list)
+    #define MC_ASSERT_IS_MLIST(obj) (obj)
+    #define MC_ASSERT_DATA_TYPE(list, obj) (obj)
 #endif
 
 static void managed_list_free(const mlist(void) *list)
 {
 	managed_release(*list);
+	/* Because we set the metadata for the list beforehand, we must now reset it to 0 to avoid the free function being called in memory we do not own */
+	_mcinternal_ptrinfo(list)->count = 0;
+	_mcinternal_ptrinfo(list)->capacity = 0;
 }
 
 #define mlist_new(type, free) (mlist(type) *)managed_list(sizeof(type), 2, free, NULL)
@@ -44,25 +47,32 @@ static mlist(void) *managed_list(size_t typesize, size_t count, managed_Free_f *
 	if (data != NULL)
 		MC_MEMCPY(*list, data, typesize * count);
 
+	/* Do the same for the actual array */
 	_mcinternal_ptrinfo(*list)->count = 0;
 	_mcinternal_ptrinfo(*list)->capacity = cap;
+
+	/* So the semantics of mc_countof(list) work, we manually set the struct fields */
+	_mcinternal_ptrinfo(list)->count = 0;
+	_mcinternal_ptrinfo(list)->capacity = cap;
 
 	return list;
 }
 
 #if defined(__STRICT_ANSI__)
-#	define mlist_push(list, data) managed_list_push(list, data)
+#	define mlist_add(list, data) managed_list_add(list, data)
 #else
-# 	define mlist_push(list, data) managed_list_push(MC_ASSERT_IS_MLIST(list), MC_ASSERT_DATA_TYPE(list, data))
+# 	define mlist_add(list, data) managed_list_add(MC_ASSERT_IS_MLIST(list), MC_ASSERT_DATA_TYPE(list, data))
 #endif
-static int managed_list_push(const void *ptr, const void *data)
-{
-	mlist(void) *list = ptr;
+static int managed_list_add(const void *ptr, const void *data)
+{ 	/* The const in the arg is a complete lie, we must keep it or else the compiler complains though */
+	const void **list = (void *)ptr;
 	struct managed_PointerInfo *listinfo_ptr = _mcinternal_ptrinfo(*list), listinfo;
 	if (listinfo_ptr == NULL) return 1;
 	listinfo = *listinfo_ptr; /*We need the copy or else we would start accessing potentially freed memory*/
 
 	if (listinfo.count >= listinfo.capacity) {
+		/* 1.5 is the most efficent cap size multiplier because of the golden ratio or something like that */
+		/* TODO: restudy math 11 so ~~I dont fail~~ I understand why the golden ratio is effective */
         size_t newcap = (size_t)listinfo.capacity * 1.5, oldc = listinfo.count;
 		void *newalloc = managed_allocate(newcap, listinfo.typesize, listinfo.free, NULL);
 		struct managed_PointerInfo *newallocinfo = NULL; 
@@ -72,23 +82,25 @@ static int managed_list_push(const void *ptr, const void *data)
 		newallocinfo->count = oldc;
 
 		MC_MEMCPY(newalloc, *list, listinfo.typesize * oldc);
-
 		managed_release(*list);
-		*((void **)list) = newalloc;
+		*list = newalloc;
+
+		_mcinternal_ptrinfo(list)->capacity = newcap;
 	}
 	
 	MC_MEMCPY(((unsigned char *)*list) + listinfo.count * listinfo.typesize, data, listinfo.typesize);
-	_mcinternal_ptrinfo(*list)->count++;
-
+	
+	/* Update the list fields So the semantics of mc_countof(list) work */
+	_mcinternal_ptrinfo(list)->count = ++_mcinternal_ptrinfo(*list)->count;
 	return 0;
 }
 
 #if defined (__STRICT_ANSI__)
-#	define mlist_pop(list, index) managed_list_pop(list, index)
+#	define mlist_rm(list, index) managed_list_remove(list, index)
 #else
-#	define mlist_pop(list, index) managed_list_pop(MC_ASSERT_IS_MLIST(list), index)
+#	define mlist_rm(list, index) managed_list_remove(MC_ASSERT_IS_MLIST(list), index)
 #endif
-static int managed_list_pop(const void *ptr, size_t index)
+static int managed_list_remove(const void *ptr, size_t index)
 {
 	mlist(void) *list = ptr;
 	struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(*list);
@@ -96,7 +108,7 @@ static int managed_list_pop(const void *ptr, size_t index)
 	if (index >= listinfo->count) return 1;
 
 	MC_MEMMOVE(((unsigned char *)*list) + index * listinfo->typesize, ((unsigned char *)*list) + (index + 1) * listinfo->typesize, (listinfo->count - index - 1) * listinfo->typesize);
-	listinfo->count--;
+	_mcinternal_ptrinfo(list)->count = --listinfo->count;
 
 	return 0;
 }
@@ -118,14 +130,14 @@ static void *managed_list_get(const void *ptr, size_t index)
 #if defined(__STRICT_ANSI__)
 #	define mlist_set(list, index, data) managed_list_set(list, index, data)
 #else
-#	define mlist_set(list, index, data) managed_list_set(MC_ASSERT_IS_MLIST(list), index, (mc_typeof(*list))data)
+#	define mlist_set(list, index, data) managed_list_set(MC_ASSERT_IS_MLIST(list), index, MC_ASSERT_DATA_TYPE(list, data))
 #endif
-static int managed_list_set(void *ptr, size_t index, void *data)
+static int managed_list_set(const void *ptr, size_t index, void *data)
 {
 	mlist(void) *list = ptr;
 	struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(*list);
-	if (listinfo == NULL) return 2;
-	if (index >= listinfo->count) return 1;
+	if (listinfo == NULL) return 1;
+	if (index >= listinfo->count) return 2;
 	MC_MEMCPY(((unsigned char *)*list) + index * listinfo->typesize, data, listinfo->typesize);
 	return 0;
 }

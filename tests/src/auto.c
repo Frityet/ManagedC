@@ -2,13 +2,13 @@
 
 #include "test.h"
 
-#define auto mc_auto
 
 declaretest(mcauto)
 {
 	#if defined (__STRICT_ANSI__)
 	return success;
 	#else
+#	define auto mc_auto
 
 	auto int *i = mc_array(int, 10, NULL);
 	ASSERT(i != NULL, "Allocation failed!");

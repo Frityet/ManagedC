@@ -1,4 +1,4 @@
-local ANSI<const> = false
+local ANSI<const> = true
 
 add_rules("mode.debug", "mode.release")
 
@@ -10,8 +10,8 @@ local CFLAGS = {
 }
 
 if ANSI then 
-    -- CFLAGS[#CFLAGS + 1] = "-ansi"
-    -- CFLAGS[#CFLAGS + 1] = "-Wpedantic"
+    CFLAGS[#CFLAGS + 1] = "-ansi"
+    CFLAGS[#CFLAGS + 1] = "-Wpedantic"
 end
 
 if ANSI then 

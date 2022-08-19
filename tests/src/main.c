@@ -12,7 +12,7 @@ int main(int argc, const char *argv[])
 	struct Test tests[128];
 	const char *opt = NULL;
 
-	extern struct Test TESTNAME(alloc), TESTNAME(realloc), TESTNAME(list), TESTNAME(string), TESTNAME(linkedlist), TESTNAME(mcauto), TESTNAME(mcdefer);
+	extern struct Test TESTNAME(alloc), TESTNAME(realloc), TESTNAME(list), TESTNAME(string), TESTNAME(linkedlist), TESTNAME(mcauto), TESTNAME(mcdefer), TESTNAME(destructor);
 	tests[__COUNTER__] = TESTNAME(alloc);
     tests[__COUNTER__] = TESTNAME(realloc);
     tests[__COUNTER__] = TESTNAME(string);
@@ -20,13 +20,14 @@ int main(int argc, const char *argv[])
     tests[__COUNTER__] = TESTNAME(mcauto);
     tests[__COUNTER__] = TESTNAME(mcdefer);
     tests[__COUNTER__] = TESTNAME(list);
+    tests[__COUNTER__] = TESTNAME(destructor);
 
     opt = argc < 1 ? "all" : argv[1];
 	if (strcmp(opt, "all") == 0) {
 		for (i = 0; i < __COUNTER__; i++) {
 			printf("Running test %s...", tests[i].name);
 			if (tests[i].test() == failure) failc++, fprintf(stderr, "\t\t\x1b[31m[Fail]\x1b[0m\n");
-			else printf("\t\t\x1b[32m[Success]\x1b[0m\n");
+			else printf("\x1b[32m[Success]\x1b[0m\n");
 		}
 	}
 

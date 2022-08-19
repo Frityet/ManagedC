@@ -8,6 +8,7 @@ CMakeLists.txt
 compile_commands.json
 
 .idea/
+lsp/
 .vscode/
 .cache/
 .clangd/

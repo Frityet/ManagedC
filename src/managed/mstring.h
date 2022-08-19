@@ -85,7 +85,7 @@ static int managed_string_equals(mstring *mc_nonnull s1, const mc_char_t *mc_non
 	return 1;
 }
 
-static int mstreq(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2)
+static int mstreq_unsafe(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2)
 {
     long int s1len = mstrlen(s1), s2len = mstrlen(s2), i = 0;
     if (s1len == -1) s1len = strlen(s1);
@@ -98,7 +98,8 @@ static int mstreq(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2)
     return 1;
 }
 
-static int mstrneq(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2, size_t s2len)
+static int mstreq(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2, size_t s2len)
 { return managed_string_equals(s1, s2, s2len); }
+#define mstreq(str1, str2) mstreq(str1, str2, strlen(str2))
 
 #endif

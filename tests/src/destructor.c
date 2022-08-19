@@ -13,7 +13,7 @@ void MyStruct_destroy(struct MyStruct *obj)
     mc_free(obj->list);
 }
 
-struct MyStruct *MyStruct_create(const char *str, size_t arrsiz, int data[arrsiz])
+struct MyStruct *MyStruct_create(const char *str, size_t arrsiz, int data[])
 {
     struct MyStruct *self = mc_new(struct MyStruct, &MyStruct_destroy);
     ASSERT(self != NULL, "Could not allocate self!");
@@ -32,8 +32,11 @@ struct MyStruct *MyStruct_create(const char *str, size_t arrsiz, int data[arrsiz
 
 declaretest(destructor)
 {
-    mc_auto struct MyStruct *obj = MyStruct_create("test", 10, (int []){ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+    int arr[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+    struct MyStruct *obj = MyStruct_create("test", 10, arr);
+    ASSERT(obj != NULL, "Could not create obj");
     
 
+    mc_free(obj);
     return success;
 }
