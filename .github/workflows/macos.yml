@@ -42,13 +42,14 @@ jobs:
 
       - name: configure-release
         run:
-          ./build/macosx/x86_64/release/tests
+          xmake run -vwD tests
 
       - name: build
         run:
           xmake build -rvwD tests
 
       - name: test
-        run: xmake run -vwD tests all  
+        run: 
+          xmake run -vwD tests
   
       
