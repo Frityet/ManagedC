@@ -16,6 +16,7 @@ end
 
 if ANSI then 
     set_languages("c89")
+    add_defines("__STRICT_ANSI__")
 else
     set_languages("gnu11")
 end

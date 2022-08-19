@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 #if !defined(MC_UINTPTR)
-typedef unsigned long int uintptr_t;
+typedef unsigned long int mc_uintptr_t;
 #endif
 
 #if !defined(MC_GUARDPAGE_MAX)
@@ -167,8 +167,7 @@ static void *mc_nullable managed_allocate(size_t count, size_t typesize, managed
 */
 static void *mc_nullable managed_copy(const void *mc_nonnull ptr, size_t count)
 {
-	struct managed_PointerInfo 	*info = (void *)managed_info_of(ptr),
-								*allocinfo = NULL;
+	struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
 	void *alloc = NULL;
 	if (count < 1) count = info->count;
 	alloc = managed_allocate(count, info->typesize, info->free,NULL);
