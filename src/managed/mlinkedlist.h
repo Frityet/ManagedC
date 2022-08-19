@@ -13,7 +13,7 @@ struct managed_Node {
 struct managed_LinkedList {
 	struct managed_Node 	*mc_nullable head, *mc_nullable tail;
 	managed_Free_f 			*mc_nullable free;
-	const mc_atomic size_t  *mc_nonnull const count;
+	const size_t  			*mc_nonnull const count;
 };
 
 static void managed_linkedlist_free(struct managed_LinkedList *mc_nonnull list)
