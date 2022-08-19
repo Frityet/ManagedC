@@ -35,7 +35,7 @@ jobs:
 
       - name: build
         run:
-          xmake run -vwD tests
+          xmake build -rvwD tests
 
       - name: test
         run: xmake run -vwD tests all
