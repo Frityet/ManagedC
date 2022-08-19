@@ -3,10 +3,10 @@
 
 #include "managed.h"
 
-#if defined(__STRICT_ANSI__)
-    #define mlist(T) T *const
+#if defined(__GNUC__)
+#	define mlist(T) mc_typeof(T *const)
 #else
-    #define mlist(T) mc_typeof(T *const)
+#	define mlist(T) T *const
 #endif
 
 #define _mcinternal_ptrinfo(ptr) ((struct managed_PointerInfo *)managed_info_of(ptr))
@@ -73,7 +73,7 @@ static int managed_list_add(const void *ptr, const void *data)
 	if (listinfo.count >= listinfo.capacity) {
 		/* 1.5 is the most efficent cap size multiplier because of the golden ratio or something like that */
 		/* TODO: restudy math 11 so ~~I dont fail~~ I understand why the golden ratio is effective */
-        size_t newcap = (size_t)listinfo.capacity * 1.5, oldc = listinfo.count;
+        size_t newcap = (size_t)(listinfo.capacity * 1.5f), oldc = listinfo.count;
 		void *newalloc = managed_allocate(newcap, listinfo.typesize, listinfo.free, NULL);
 		struct managed_PointerInfo *newallocinfo = NULL; 
 		if (newalloc == NULL) return 1;
@@ -102,7 +102,7 @@ static int managed_list_add(const void *ptr, const void *data)
 #endif
 static int managed_list_remove(const void *ptr, size_t index)
 {
-	mlist(void) *list = ptr;
+	mlist(void) *list = (void *)ptr;
 	struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(*list);
 	if (listinfo == NULL) return 2;
 	if (index >= listinfo->count) return 1;
@@ -113,28 +113,28 @@ static int managed_list_remove(const void *ptr, size_t index)
 	return 0;
 }
 
-#if defined (__STRICT_ANSI__)
+#if !defined (__GNUC__)
 #	define mlist_get(list, index) managed_list_get(list, index)
 #else
 #	define mlist_get(list, index) (mc_typeof(*list))managed_list_get(MC_ASSERT_IS_MLIST(list), index)
 #endif
 static void *managed_list_get(const void *ptr, size_t index)
 {
-	mlist(void) *list = ptr;
+	mlist(void) *list = (void *)ptr;
 	struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(*list);
 	if (listinfo == NULL) return NULL;
 	if (index >= listinfo->count) return NULL;
 	return ((unsigned char *)*list) + index * listinfo->typesize;
 }
 
-#if defined(__STRICT_ANSI__)
+#if !defined(__GNUC__)
 #	define mlist_set(list, index, data) managed_list_set(list, index, data)
 #else
 #	define mlist_set(list, index, data) managed_list_set(MC_ASSERT_IS_MLIST(list), index, MC_ASSERT_DATA_TYPE(list, data))
 #endif
 static int managed_list_set(const void *ptr, size_t index, void *data)
 {
-	mlist(void) *list = ptr;
+	mlist(void) *list = (void *)ptr;
 	struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(*list);
 	if (listinfo == NULL) return 1;
 	if (index >= listinfo->count) return 2;
@@ -142,10 +142,14 @@ static int managed_list_set(const void *ptr, size_t index, void *data)
 	return 0;
 }
 
-#define mlist_copy(list) (mlist(mc_typeof(**list)) *)managed_list_copy(MC_ASSERT_IS_MLIST(list))
+#if !defined(__GNUC__)
+#	define mlist_copy(list) managed_list_copy(list)
+#else
+#	define mlist_copy(list) (mlist(mc_typeof(**list)) *)managed_list_copy(MC_ASSERT_IS_MLIST(list))
+#endif
 static mlist(void) *managed_list_copy(const void *ptr)
 {
-	mlist(void) *list = ptr;
+	mlist(void) *list = (void *)ptr;
 	struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(*list);
 	if (listinfo == NULL) return NULL;
 	return managed_list(listinfo->typesize, listinfo->count, listinfo->free, *list);

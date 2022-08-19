@@ -4,7 +4,6 @@
 declaretest(linkedlist)
 {
 	struct managed_LinkedList *list = mllist_new(mstring *, managed_release);
-	size_t i = 0;
     mstring *s1 = mstr("Hello, "), *s2 = mstr("World"), *s3 = mstr("!");
 
 	mllist_add(list, &s1);

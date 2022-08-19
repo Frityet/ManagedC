@@ -5,7 +5,7 @@
 
 declaretest(mcauto)
 {
-	#if defined (__STRICT_ANSI__)
+#	if !defined (__GNUC__)
 	return success;
 	#else
 #	define auto mc_auto

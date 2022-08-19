@@ -76,7 +76,7 @@ static void managed_linkedlist_remove(struct managed_LinkedList *mc_nonnull list
 {
 	struct managed_Node *node = list->head;
 
-	if (index < 0) index = *list->count;
+	if (index < 0) index = (long int)*list->count;
 	if (index >= (long int)(*list->count)) return;
 
 	while (index-- > 0) {

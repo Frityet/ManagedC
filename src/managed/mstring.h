@@ -88,8 +88,8 @@ static int managed_string_equals(mstring *mc_nonnull s1, const mc_char_t *mc_non
 static int mstreq_unsafe(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2)
 {
     long int s1len = mstrlen(s1), s2len = mstrlen(s2), i = 0;
-    if (s1len == -1) s1len = strlen(s1);
-    if (s2len == -1) s2len = strlen(s2);
+    if (s1len == -1) s1len = (long int)strlen(s1);
+    if (s2len == -1) s2len = (long int)strlen(s2);
     if (s1len != s2len) return 0;
 
     for (i = 0; i < s1len; i++)

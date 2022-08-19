@@ -30,7 +30,7 @@ typedef unsigned long int mc_uintptr_t;
 # 	define MC_FREE(ptr) free(ptr)
 #endif
 
-#if defined(__STRICT_ANSI__)
+#if !defined(__GNUC__)
 #	define mc_nullable
 # 	define mc_nonnull 
 #	define mc_attribute(t)
@@ -59,7 +59,7 @@ static void _mc_rundefer(void (^mc_nonnull *mc_nonnull cb)(void)) { (*cb)(); }
 #	endif
 #endif
 
-#if defined(__STRICT_ANSI__)
+#if !defined(__GNUC__)
 #	define mc_auto Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!
 #else 
 static void managed_release(const void *mc_nonnull ptr);
@@ -121,21 +121,21 @@ static long int mc_countof(const void *mc_nonnull ptr)
 {
     const struct managed_PointerInfo *info = managed_info_of(ptr);
     if (info == NULL) return -1;
-    else return info->count;
+    else return (long int)info->count;
 }
 
 static long int mc_sizeof_type(const void *mc_nonnull ptr)
 {
     const struct managed_PointerInfo *info = managed_info_of(ptr);
     if (info == NULL) return -1;
-    else return info->typesize;
+    else return (long int)info->typesize;
 }
 
 static long int mc_sizeof(const void *mc_nonnull ptr)
 {
     long int c = mc_countof(ptr);
     if (c == -1) return -1;
-    return c * mc_sizeof_type(ptr);
+    return (long int)c * mc_sizeof_type(ptr);
 }
 
 #define mc_new(T, free) (T *)managed_allocate(1, sizeof(T), (managed_Free_f *)(free), NULL)
