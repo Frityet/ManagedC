@@ -30,12 +30,6 @@ typedef unsigned long int uintptr_t;
 # 	define MC_FREE(ptr) free(ptr)
 #endif
 
-#if __STDC_VERSION__ >= 201112L
-    #define mc_atomic _Atomic
-#else
-    #define mc_atomic
-#endif
-
 #if defined(__STRICT_ANSI__)
 #	define mc_nullable
 # 	define mc_nonnull 
@@ -94,7 +88,7 @@ struct managed_PointerInfo {
 	 * typesize: Size of the type.
 	 * reference_count: Number of references to this pointer.
 	 */
-	mc_atomic size_t count, capacity, typesize, reference_count;
+	size_t count, capacity, typesize, reference_count;
 
 	/**
 	* Function to call on 0 references.
