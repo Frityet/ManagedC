@@ -35,18 +35,18 @@ jobs:
 
       - name: build
         run:
-          xmake build -rvwD tests
+          ./build/linux/x86_64/debug/tests
 
       - name: test
         run: xmake run -vwD tests all
 
       - name: configure-release
         run:
-          xmake config --mode=debug
+          ./build/linux/x86_64/release/tests
 
       - name: build
         run:
-            xmake build -rvwD tests
+          xmake build -rvwD tests
 
       - name: test
         run: xmake run -vwD tests all  
