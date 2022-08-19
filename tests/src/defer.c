@@ -6,7 +6,7 @@
 
 declaretest(mcdefer)
 {
-	#if defined (__STRICT_ANSI__) || !(defined(__clang__) && defined (__llvm__))
+	#if !MC_LLVM
 	return success;
 	#else
 

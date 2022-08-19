@@ -6,14 +6,14 @@ struct MyStruct {
     struct managed_LinkedList *list;
 };
 
-void MyStruct_destroy(struct MyStruct *obj)
+static void MyStruct_destroy(struct MyStruct *obj)
 {
     mc_free(obj->array);
     mc_free(obj->str);
     mc_free(obj->list);
 }
 
-struct MyStruct *MyStruct_create(const char *str, size_t arrsiz, int data[])
+static struct MyStruct *MyStruct_create(const char *str, size_t arrsiz, int data[])
 {
     struct MyStruct *self = mc_new(struct MyStruct, &MyStruct_destroy);
     ASSERT(self != NULL, "Could not allocate self!");

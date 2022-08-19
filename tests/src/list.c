@@ -11,7 +11,7 @@ declaretest(list)
 	for (i = 0; i < (1 << 16); i++)
 		mlist_add(list, &i);
 
-	listlen = mc_countof(list);
+	listlen = (size_t)mc_countof(list);
 	ASSERT(listlen == (1 << 16), "Count did not match!");
 
 	for (i = 0; i < listlen; i++) {

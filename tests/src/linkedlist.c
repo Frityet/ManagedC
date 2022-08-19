@@ -24,7 +24,7 @@ declaretest(linkedlist)
 		ASSERT(*str1 != NULL, "Could not allocate string!");
 		ASSERT(*str2 != NULL, "Could not allocate string!");
 		ASSERT(*str3 != NULL, "Could not allocate string!");
-        s1len = mstrlen(*str1), s2len = mstrlen(*str2), s3len = mstrlen(*str3);
+        s1len = (size_t)mstrlen(*str1), s2len = (size_t)mstrlen(*str2), s3len = (size_t)mstrlen(*str3);
 
         ASSERT(s1len == strlen("Hello, "), "Length did not match!");
 		ASSERT(s2len == strlen("World"), "Length did not match!");

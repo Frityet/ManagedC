@@ -16,7 +16,7 @@ declaretest(string)
 
 	ASSERT(full != NULL, "Could not allocate string!");
 	ASSERT(mstrlen(full) == strlen("Hello, World!"), "Length did not match!");
-	ASSERT(mstreq(full, "Hello, World!"), "String did not match!");
+	ASSERT((bool)mstreq(full, "Hello, World!"), "String did not match!");
 
 	mc_free(full);
 	return success;

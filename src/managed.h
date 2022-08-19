@@ -86,7 +86,6 @@ static void managed_release_ptr(void *mc_nonnull addr)
 }
 
 #	define mc_auto mc_attribute(cleanup(managed_release_ptr))
-# 	define MANAGED_HAS_AUTO
 #endif
 
 #define _mcinternal_ptrinfo(ptr) ((struct managed_PointerInfo *)managed_info_of(ptr))
@@ -101,8 +100,6 @@ struct managed_PointerInfo {
 	 * reference_count: Number of references to this pointer.
 	 */
 	size_t count, capacity, typesize, reference_count;
-
-	unsigned char lock;
 
 	/**
 	* Function to call on 0 references.
@@ -179,16 +176,17 @@ static void *mc_nullable managed_allocate(size_t count, size_t typesize, managed
 /**
 * Creates a copy of the managed pointer. This copies every byte of data in the allocation
 */
-static void *mc_nullable managed_copy(const void *mc_nonnull ptr, size_t count)
+static void *mc_nullable managed_copy(const void *mc_nonnull ptr, long int count)
 {
 	struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
 	void *alloc = NULL;
-	if (count < 1) count = info->count;
-	alloc = managed_allocate(count, info->typesize, info->free,NULL);
+	if (info == NULL) return NULL;
+	if (count < 1) count = (long int)info->count;
+	alloc = managed_allocate((size_t)count, info->typesize, info->free,NULL);
 	if (alloc == NULL) return NULL;
 
 	/* Just in case count is larger than mc_countof(ptr) (sizing up an allocation), make sure you only copy the existing data */
-	MC_MEMCPY(alloc, ptr, mc_sizeof_type(ptr) * mc_countof(ptr));
+	MC_MEMCPY(alloc, ptr, (size_t)(mc_sizeof_type(ptr) * mc_countof(ptr)));
 
 	return alloc;
 }

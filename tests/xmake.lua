@@ -5,8 +5,13 @@ add_rules("mode.debug", "mode.release")
 local CFLAGS = {
     "-Wall", "-Wextra", "-Werror", "-Weverything",
     sanitizers = "address,leak,undefined",
-    "-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-unused-function", "-Wno-unused-but-set-variable",
-    "-Wno-array-bounds"
+    "-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-unused-function",
+    "-Wno-missing-variable-declarations",
+    "-Wno-keyword-macro",
+    "-Wno-reserved-identifier",
+    "-Wno-comma",
+    "-Wno-cast-qual",
+    "-Wno-bad-function-cast"
 }
 
 if ANSI then 

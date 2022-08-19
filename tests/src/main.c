@@ -25,7 +25,10 @@ int main()
 
 	for (i = 0; i < __COUNTER__ - 1; i++) {
 		printf("Running test %s...", tests[i].name);
-		if (tests[i].test() == failure) failc++, fprintf(stderr, "\t\t\x1b[31m[Fail]\x1b[0m\n");
+		if (tests[i].test() == failure) {
+			failc++;
+			fprintf(stderr, "\t\t\x1b[31m[Fail]\x1b[0m\n");
+		}
 		else printf("\x1b[32m[Success]\x1b[0m\n");
 	}
 

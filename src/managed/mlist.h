@@ -69,11 +69,11 @@ static int managed_list_add(const void *ptr, const void *data)
 	struct managed_PointerInfo *listinfo_ptr = _mcinternal_ptrinfo(*list), listinfo;
 	if (listinfo_ptr == NULL) return 1;
 	listinfo = *listinfo_ptr; /*We need the copy or else we would start accessing potentially freed memory*/
-
+ 
 	if (listinfo.count >= listinfo.capacity) {
 		/* 1.5 is the most efficent cap size multiplier because of the golden ratio or something like that */
 		/* TODO: restudy math 11 so ~~I dont fail~~ I understand why the golden ratio is effective */
-        size_t newcap = (size_t)(listinfo.capacity * 1.5f), oldc = listinfo.count;
+        size_t newcap = (size_t)((double)listinfo.capacity * 1.5), oldc = listinfo.count;
 		void *newalloc = managed_allocate(newcap, listinfo.typesize, listinfo.free, NULL);
 		struct managed_PointerInfo *newallocinfo = NULL; 
 		if (newalloc == NULL) return 1;

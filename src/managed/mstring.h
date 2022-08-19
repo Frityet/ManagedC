@@ -21,7 +21,6 @@ typedef mc_char_t mstring;
 */
 static mstring *mc_nullable managed_string(const mc_char_t *mc_nonnull str, size_t len)
 {
-	
 	mstring *s = managed_allocate(len + 1, sizeof(mc_char_t), NULL, NULL);
 	if (s == NULL) return NULL;
     MC_MEMCPY(s, str, len);
@@ -40,9 +39,9 @@ static mstring *mc_nullable mstr(const mc_char_t *mc_nonnull str)
 */
 static mstring *mc_nullable managed_string_duplicate(const mstring *mc_nonnull str)
 {
-	long int length = mstrlen(str);
+	long int length = mstrlen(str); 
 	if (length == -1) return NULL;
-	return managed_string(str, length);
+	return managed_string(str, (size_t)length);
 }
 static mstring *mc_nullable mstrdup(const mstring *mc_nonnull str)
 { return managed_string_duplicate(str); }
@@ -57,12 +56,13 @@ static mstring *mc_nullable mstrdup(const mstring *mc_nonnull str)
 static mstring *mc_nullable managed_string_concatenate(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2, size_t s2len)
 {
 	mstring *s = NULL;
-	size_t s1len = mstrlen(s1), total;
-	total = s1len + s2len;
+	long int s1len = mstrlen(s1), total;
+	if (s1len < 1) return NULL;
+	total = (long int)s1len + (long int)s2len;
 
-	s = managed_allocate(total + 1, sizeof(mc_char_t), NULL, NULL);
+	s = managed_allocate((size_t)total + 1, sizeof(mc_char_t), NULL, NULL);
 	if (s == NULL) return NULL;
-	MC_MEMCPY(s, s1, s1len); /* It cannot be a param for data because that assumes that sizeof(data) == count * typesize */
+	MC_MEMCPY(s, s1, (size_t)s1len); /* It cannot be a param for data because that assumes that sizeof(data) == count * typesize */
 	MC_MEMCPY((mstring *)(s + s1len), s2, s2len);
 	((mstring *)s)[total] = '\0';
 
@@ -82,7 +82,7 @@ static int managed_string_equals(mstring *mc_nonnull s1, const mc_char_t *mc_non
 	if (s1len != (long int)s2len) return 0;
 
 	for (i = 0; i < s1len; i++)
-		if (((mc_char_t *)s1)[i] != ((mc_char_t *)s2)[i]) return 0;
+		if (((mc_char_t *)s1)[i] != ((const mc_char_t *)s2)[i]) return 0;
 
 	return 1;
 }
@@ -95,13 +95,15 @@ static int mstreq_unsafe(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2)
     if (s1len != s2len) return 0;
 
     for (i = 0; i < s1len; i++)
-        if (((mc_char_t *)s1)[i] != ((mc_char_t *)s2)[i]) return 0;
+        if (((mc_char_t *)s1)[i] != ((const mc_char_t *)s2)[i]) return 0;
 
     return 1;
 }
 
-static int mstreq(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2, size_t s2len)
-{ return managed_string_equals(s1, s2, s2len); }
-#define mstreq(str1, str2) mstreq(str1, str2, strlen(str2))
+static int mstreq(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2)
+{ return managed_string_equals(s1, s2, strlen(s2)); }
+
+static int mstrneq(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2, size_t len)
+{ return managed_string_equals(s1, s2, len); }
 
 #endif

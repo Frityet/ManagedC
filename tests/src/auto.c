@@ -2,10 +2,9 @@
 
 #include "test.h"
 
-
 declaretest(mcauto)
 {
-#	if !defined (__GNUC__)
+#	if MC_ANSI
 	return success;
 	#else
 #	define auto mc_auto
