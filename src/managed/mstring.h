@@ -20,10 +20,11 @@ typedef mc_char_t mstring;
 */
 static mstring *mc_nullable managed_string(const mc_char_t *mc_nonnull str, size_t len)
 {
-    /* This actually could be UB if the string has no null terminator, and strlen(str) is ACTUALLY == len */
-	mstring *s = managed_allocate(len + 1, sizeof(mc_char_t), NULL, str);
+	
+	mstring *s = managed_allocate(len + 1, sizeof(mc_char_t), NULL, NULL);
 	if (s == NULL) return NULL;
-    s[len] = '\0';
+    MC_MEMCPY(s, str, len);
+	s[len] = '\0';
 
 	_mcinternal_ptrinfo(s)->count--; /* Don't count the null terminator */
 

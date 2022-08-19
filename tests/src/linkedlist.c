@@ -10,8 +10,7 @@ declaretest(linkedlist)
 	mllist_add(list, &s2);
 	mllist_add(list, &s3);
 
-	ASSERT(*list->count == 3, "Count did not match!");
-
+	ASSERT(*list->length == 3, "Count did not match!");
 	{	
 		mstring **str1 = mllist_get(list, 0),
 				**str2 = mllist_get(list, 1),

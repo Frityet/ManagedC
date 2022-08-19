@@ -13,7 +13,7 @@ struct managed_Node {
 struct managed_LinkedList {
 	struct managed_Node 	*mc_nullable head, *mc_nullable tail;
 	managed_Free_f 			*mc_nullable free;
-	const size_t  			*mc_nonnull const count;
+	const size_t  			*mc_nonnull const length;
 };
 
 static void managed_linkedlist_free(struct managed_LinkedList *mc_nonnull list)
@@ -35,7 +35,7 @@ static struct managed_LinkedList *mc_nullable managed_linkedlist(size_t typesize
 	struct managed_LinkedList *list = mc_new(struct managed_LinkedList, managed_linkedlist_free);
 	const size_t **ptr = NULL;
 	if (list == NULL) return NULL;
-	ptr = (void *)&list->count;
+	ptr = (void *)&list->length;
 	*ptr = &_mcinternal_ptrinfo(list)->count;
 
 	_mcinternal_ptrinfo(list)->count    = 0;
@@ -76,8 +76,8 @@ static void managed_linkedlist_remove(struct managed_LinkedList *mc_nonnull list
 {
 	struct managed_Node *node = list->head;
 
-	if (index < 0) index = (long int)*list->count;
-	if (index >= (long int)(*list->count)) return;
+	if (index < 0) index = (long int)*list->length;
+	if (index >= (long int)(*list->length)) return;
 
 	while (index-- > 0) {
 		node = node->next;
@@ -103,7 +103,7 @@ static void *mc_nullable managed_linkedlist_get(struct managed_LinkedList *mc_no
 {
 	struct managed_Node *node = list->head;
 	if (index < 0) return NULL;
-	if (index >= (long int)*list->count) return NULL;
+	if (index >= (long int)*list->length) return NULL;
 
 	while (index-- > 0) {
 		node = node->next;
@@ -115,7 +115,7 @@ static void *mc_nullable managed_linkedlist_get(struct managed_LinkedList *mc_no
 static int managed_linkedlist_set(struct managed_LinkedList *mc_nonnull list, size_t index, const void *mc_nonnull data)
 {
 	struct managed_Node *node = list->head;
-    if (index >= *list->count) return 1;
+    if (index >= *list->length) return 1;
 
 	while (index-- > 0) {
 		node = node->next;
