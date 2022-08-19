@@ -29,20 +29,26 @@ jobs:
       - name: setup xmake
         uses: xmake-io/github-action-setup-xmake@v1.0.12
       
-      - name: build-debug
-        run: 
+      - name: configure-debug
+        run:
           xmake config --mode=debug
+
+      - name: build
+        run:
           xmake build -rvwD tests
 
-      - name: test-debug
+      - name: test
         run: xmake run -vwD tests all
 
-      - name: build-release
+      - name: configure-release
         run:
-            xmake config --mode=release
+          xmake config --mode=debug
+
+      - name: build
+        run:
             xmake build -rvwD tests
 
-      - name: test-release
+      - name: test
         run: xmake run -vwD tests all  
   
       
