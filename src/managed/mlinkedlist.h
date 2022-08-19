@@ -49,11 +49,14 @@ static struct managed_LinkedList *mc_nullable managed_linkedlist(size_t typesize
 #define mllist_add(list, data) managed_linkedlist_add(list, (void *)(data))
 static int managed_linkedlist_add(struct managed_LinkedList *mc_nonnull list, void *mc_nonnull data)
 {
-    size_t tsiz = mc_sizeof_type(list);
-	struct managed_Node *node = mc_new(struct managed_Node, NULL);
+    long int tsiz = mc_sizeof_type(list);
+	struct managed_Node *node; 
+	if (tsiz < 1) return 2;
+
+	node = mc_new(struct managed_Node, NULL);
 	if (node == NULL) return 1;
 
-	node->data = managed_allocate(1, tsiz, list->free, data);
+	node->data = managed_allocate(1, (size_t)tsiz, list->free, data);
     if (node->data == NULL) {
         mc_free(node);
         return 1;
@@ -121,7 +124,7 @@ static int managed_linkedlist_set(struct managed_LinkedList *mc_nonnull list, si
 		node = node->next;
 	}
 	mc_free(node->data);
-	node->data = managed_allocate(1, mc_sizeof_type(list), NULL, data);
+	node->data = managed_allocate(1, (size_t)mc_sizeof_type(list), NULL, data);
 	return 0;
 }
 

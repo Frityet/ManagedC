@@ -71,18 +71,18 @@ static void _mc_rundefer(void (^mc_nonnull *mc_nonnull cb)(void)) { (*cb)(); }
 #	endif
 #endif
 
-#if !MC_ANSI
+#if MC_ANSI
 #	define mc_auto Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!
 #else 
 static void managed_release(const void *mc_nonnull ptr);
 static void managed_release_ptr(void *mc_nonnull addr)
 {
-	void **ptr = addr;
-	if (*ptr)
-	{
-		managed_release(*ptr);
-		*ptr = NULL;
-	}
+    void **ptr = addr;
+    if (*ptr)
+    {
+        managed_release(*ptr);
+        *ptr = NULL;
+    }
 }
 
 #	define mc_auto mc_attribute(cleanup(managed_release_ptr))
@@ -93,23 +93,28 @@ static void managed_release_ptr(void *mc_nonnull addr)
 typedef void managed_Free_f(void *mc_nonnull alloc);
 
 struct managed_PointerInfo {
-	/**
-	 * count: Number of used array elements.
-	 * capacity: Number of allocated array elements. (Used for managed_Vector)
-	 * typesize: Size of the type.
-	 * reference_count: Number of references to this pointer.
-	 */
-	size_t count, capacity, typesize, reference_count;
+    /**
+     * count: Number of used array elements.
+     * capacity: Number of allocated array elements. (Used for managed_Vector)
+     * typesize: Size of the type.
+     * reference_count: Number of references to this pointer.
+     */
+    size_t count, capacity, typesize, reference_count;
 
-	/**
-	* Function to call on 0 references.
-	*/
-	managed_Free_f *mc_nonnull free;
+    /**
+    * Function to call on 0 references.
+    */
+    managed_Free_f *mc_nonnull free;
 
-	/**
-	* Pointer to the data, should be just in front of data.
-	*/
-	void *mc_nonnull data;
+    /**
+    * Pointer to the data, should be just in front of data.
+    */
+    void *mc_nonnull data;
+
+    /**
+    * Write lock for the data, 7 bytes of padding was gonna be added anyways, why not just use it all?
+    */
+    unsigned long int locked;
 };
 
 /**
@@ -117,15 +122,15 @@ struct managed_PointerInfo {
 */
 static const struct managed_PointerInfo *mc_nullable managed_info_of(const void *mc_nonnull ptr)
 {
-	struct managed_PointerInfo *info = NULL;
+    struct managed_PointerInfo *info = NULL;
 
     /*Check if the pointer is lesser than the max page, which *probably* means that it is not on the heap*/
-	if ((uintptr_t)ptr < MC_GUARDPAGE_MAX) return NULL;
-	info = (struct managed_PointerInfo *)ptr - 1;
-	if (info->data != ptr)
-		return NULL;
+    if ((uintptr_t)ptr < MC_GUARDPAGE_MAX) return NULL;
+    info = (struct managed_PointerInfo *)ptr - 1;
+    if (info->data != ptr)
+        return NULL;
 
-	return info;
+    return info;
 }
 
 static long int mc_countof(const void *mc_nonnull ptr)
@@ -156,20 +161,21 @@ static long int mc_sizeof(const void *mc_nonnull ptr)
 */
 static void *mc_nullable managed_allocate(size_t count, size_t typesize, managed_Free_f *mc_nullable free, const void *mc_nullable data)
 {
-	struct managed_PointerInfo *info = MC_ALLOCATOR(1, sizeof(struct managed_PointerInfo) + count * typesize);
-	if (info == NULL) return NULL;
-	
-	info->capacity = info->count    = count;
-	info->typesize 			        = typesize;
-	info->free 				        = free;
-	info->reference_count 	        = 1;
-	/* The data must be right after the metadata */
-	info->data 				        = info + 1;
+    struct managed_PointerInfo *info = MC_ALLOCATOR(1, sizeof(struct managed_PointerInfo) + count * typesize);
+    if (info == NULL) return NULL;
+    
+    info->capacity = info->count= count;
+    info->typesize 			   	= typesize;
+    info->free 				    = free;
+    info->reference_count 	    = 1;
+    /* The data must be right after the metadata */
+    info->data 				    = info + 1;
+    info->locked				= 0;
 
-	if (data != NULL)
-		MC_MEMCPY(info->data, data, count * typesize);
+    if (data != NULL)
+        MC_MEMCPY(info->data, data, count * typesize);
 
-	return info->data;
+    return info->data;
 }
 
 
@@ -178,17 +184,17 @@ static void *mc_nullable managed_allocate(size_t count, size_t typesize, managed
 */
 static void *mc_nullable managed_copy(const void *mc_nonnull ptr, long int count)
 {
-	struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
-	void *alloc = NULL;
-	if (info == NULL) return NULL;
-	if (count < 1) count = (long int)info->count;
-	alloc = managed_allocate((size_t)count, info->typesize, info->free,NULL);
-	if (alloc == NULL) return NULL;
+    struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
+    void *alloc = NULL;
+    if (info == NULL) return NULL;
+    if (count < 1) count = (long int)info->count;
+    alloc = managed_allocate((size_t)count, info->typesize, info->free,NULL);
+    if (alloc == NULL) return NULL;
 
-	/* Just in case count is larger than mc_countof(ptr) (sizing up an allocation), make sure you only copy the existing data */
-	MC_MEMCPY(alloc, ptr, (size_t)(mc_sizeof_type(ptr) * mc_countof(ptr)));
+    /* Just in case count is larger than mc_countof(ptr) (sizing up an allocation), make sure you only copy the existing data */
+    MC_MEMCPY(alloc, ptr, (size_t)(mc_sizeof_type(ptr) * mc_countof(ptr)));
 
-	return alloc;
+    return alloc;
 }
 
 static void *mc_nullable mc_dup(const void *mc_nonnull ptr)
@@ -200,9 +206,11 @@ static void *mc_nullable mc_dup(const void *mc_nonnull ptr)
 */
 static void *mc_nonnull managed_reference(const void *mc_nonnull ptr)
 {
-	struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
-	info->reference_count++;
-	return (void *)ptr;
+    struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
+    while (info->locked);
+    
+    info->reference_count++;
+    return (void *)ptr;
 }
 
 /**
@@ -210,20 +218,20 @@ static void *mc_nonnull managed_reference(const void *mc_nonnull ptr)
 */
 static void managed_release(const void *mc_nonnull ptr)
 {
-	struct managed_PointerInfo *info = NULL;
-	size_t i = 0;
+    struct managed_PointerInfo *info = NULL;
+    size_t i = 0;
 
-	if (ptr == NULL) return;
-	info = (void *)managed_info_of(ptr);
-	
-	info->reference_count--;
-	if (info->reference_count < 1) {
-		if (info->free != NULL)
-			for (i = 0; i < info->count; i++) /* Free each item of the allocation individually */
+    if (ptr == NULL) return;
+    info = (void *)managed_info_of(ptr);
+    
+    info->reference_count--;
+    if (info->reference_count < 1) {
+        if (info->free != NULL)
+            for (i = 0; i < info->count; i++) /* Free each item of the allocation individually */
                 info->free(((unsigned char *)ptr) + i * info->typesize);
 
-		MC_FREE(info);
-	}
+        MC_FREE(info);
+    }
 }
 static void mc_free(const void *mc_nonnull ptr)
 { managed_release(ptr); }
@@ -233,12 +241,12 @@ static void mc_free(const void *mc_nonnull ptr)
 */
 static void *mc_nullable managed_to_unmanaged(const void *mc_nonnull ptr)
 {
-	struct managed_PointerInfo *info = _mcinternal_ptrinfo(ptr);
-	void *unmanaged = MC_ALLOCATOR(info->count + 1, info->typesize); /* +1 just in case it's a string */
-	if (unmanaged == NULL) return NULL;
+    struct managed_PointerInfo *info = _mcinternal_ptrinfo(ptr);
+    void *unmanaged = MC_ALLOCATOR(info->count + 1, info->typesize); /* +1 just in case it's a string */
+    if (unmanaged == NULL) return NULL;
 
-	MC_MEMCPY(unmanaged, ptr, info->count * info->typesize);
-	return unmanaged;
+    MC_MEMCPY(unmanaged, ptr, info->count * info->typesize);
+    return unmanaged;
 }
 
 #undef _mcinternal_ptrinfo

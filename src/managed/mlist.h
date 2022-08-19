@@ -11,13 +11,8 @@
 
 #define _mcinternal_ptrinfo(ptr) ((struct managed_PointerInfo *)managed_info_of(ptr))
 
-#if MC_ANSI
-    #define MC_ASSERT_IS_MLIST(obj) (obj)
-    #define MC_ASSERT_DATA_TYPE(list, obj) (obj)
-#else
-    #define MC_ASSERT_IS_MLIST(list) (({ mlist(__typeof__(**list)) *_list_test_t_ = list; _list_test_t_; }))
-    #define MC_ASSERT_DATA_TYPE(list, obj) (({ __typeof__(**list) _obj_test_t_ = *(obj); (obj); }))
-#endif
+#define MC_ASSERT_IS_MLIST(list) (({ mlist(__typeof__(**list)) *_list_test_t_ = list; _list_test_t_; }))
+#define MC_ASSERT_DATA_TYPE(list, obj) (({ __typeof__(**list) _obj_test_t_ = *(obj); (obj); }))
 
 static void managed_list_free(const mlist(void) *list)
 {

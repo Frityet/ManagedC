@@ -1,6 +1,9 @@
 #include "managed.h"
 #include "managed/mlist.h"
 #include "test.h"
+#include <stdint.h>
+
+#define LIST_SIZE (1 << 24)
 
 declaretest(list)
 {
@@ -8,11 +11,11 @@ declaretest(list)
 	size_t i = 0, listlen = 0;
 
 	ASSERT(list != NULL, "Could not allocate list!");
-	for (i = 0; i < (1 << 16); i++)
-		mlist_add(list, &i);
+	for (i = 0; i < LIST_SIZE; i++)
+		ASSERT(mlist_add(list, &i) == 0, "Could not add item!");
 
 	listlen = (size_t)mc_countof(list);
-	ASSERT(listlen == (1 << 16), "Count did not match!");
+	ASSERT(listlen == LIST_SIZE, "Count did not match!");
 
 	for (i = 0; i < listlen; i++) {
 		size_t val = *(size_t *)mlist_get(list, i);
@@ -20,11 +23,11 @@ declaretest(list)
 	}
 
 	mlist_set(list, 0, &i);
-	ASSERT(*(size_t *)mlist_get(list, 0) == (1 << 16), "Value did not set!");
+	ASSERT(*(size_t *)mlist_get(list, 0) == LIST_SIZE, "Value did not set!");
 
 	mlist_rm(list, 0);
-	ASSERT(*(size_t *)mlist_get(list, 0) != (1 << 16), "Value did not remove!");
-	ASSERT(mc_countof(list) == (1 << 16) - 1, "List length did not lower!");
+	ASSERT(*(size_t *)mlist_get(list, 0) != LIST_SIZE, "Value did not remove!");
+	ASSERT((size_t)mc_countof(list) == LIST_SIZE - 1, "List length did not lower!");
 
 	mc_free(list);
 	return success;
