@@ -11,7 +11,9 @@ local CFLAGS = {
     "-Wno-reserved-identifier",
     "-Wno-comma",
     "-Wno-cast-qual",
-    "-Wno-bad-function-cast"
+    "-Wno-bad-function-cast",
+    "-Wno-atomic-implicit-seq-cst",
+    "-Wno-gnu-statement-expression"
 }
 
 if ANSI then 

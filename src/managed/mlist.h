@@ -32,7 +32,7 @@ static mlist(void) *managed_list(size_t typesize, size_t count, managed_Free_f *
 	if (list == NULL) return NULL;
 
     /* Make sure it's even */
-	cap = count < 2 ? 2 : count % 2 == 0 ? count : count + 1;
+	cap = count + (count & 1);
 	*list = managed_allocate(cap, typesize, free, NULL);
 	if (*list == NULL) {
 		mc_free(list);
@@ -61,32 +61,34 @@ static mlist(void) *managed_list(size_t typesize, size_t count, managed_Free_f *
 static int managed_list_add(const void *ptr, const void *data)
 { 	/* The const in the arg is a complete lie, we must keep it or else the compiler complains though */
 	const void **list = (void *)ptr;
-	struct managed_PointerInfo *listinfo_ptr = _mcinternal_ptrinfo(*list), listinfo;
-	if (listinfo_ptr == NULL) return 1;
-	listinfo = *listinfo_ptr; /*We need the copy or else we would start accessing potentially freed memory*/
- 
-	if (listinfo.count >= listinfo.capacity) {
+	struct managed_PointerInfo 	*list_data_ptr = _mcinternal_ptrinfo(*list), datainfo, *listinfo = _mcinternal_ptrinfo(list);
+	if (list_data_ptr == NULL || listinfo == NULL) return 1;
+	datainfo = *list_data_ptr; /*We need the copy or else we would start accessing potentially freed memory*/
+	
+	if (datainfo.count >= datainfo.capacity) {
 		/* 1.5 is the most efficent cap size multiplier because of the golden ratio or something like that */
-		/* TODO: restudy math 11 so ~~I dont fail~~ I understand why the golden ratio is effective */
-        size_t newcap = (size_t)((double)listinfo.capacity * 1.5), oldc = listinfo.count;
-		void *newalloc = managed_allocate(newcap, listinfo.typesize, listinfo.free, NULL);
+		/* TODO: restudy math 11 so ~~I~dont~fail~~ I understand why the golden ratio is effective */
+        size_t newcap = (size_t)((double)datainfo.capacity * 1.5), oldc = datainfo.count;
+		void *newalloc = managed_allocate(newcap, datainfo.typesize, datainfo.free, NULL);
 		struct managed_PointerInfo *newallocinfo = NULL; 
-		if (newalloc == NULL) return 1;
+		if (newalloc == NULL || listinfo == NULL) return 1;
 
 		newallocinfo = _mcinternal_ptrinfo(newalloc);
 		newallocinfo->count = oldc;
 
-		MC_MEMCPY(newalloc, *list, listinfo.typesize * oldc);
+
+		MC_MEMCPY(newalloc, *list, datainfo.typesize * oldc);
 		managed_release(*list);
 		*list = newalloc;
 
-		_mcinternal_ptrinfo(list)->capacity = newcap;
+
+		listinfo->capacity = newcap;
 	}
 	
-	MC_MEMCPY(((unsigned char *)*list) + listinfo.count * listinfo.typesize, data, listinfo.typesize);
+	MC_MEMCPY(((unsigned char *)*list) + datainfo.count * datainfo.typesize, data, datainfo.typesize);
 	
 	/* Update the list fields So the semantics of mc_countof(list) work */
-	_mcinternal_ptrinfo(list)->count = ++_mcinternal_ptrinfo(*list)->count;
+	listinfo->count = ++_mcinternal_ptrinfo(*list)->count;
 	return 0;
 }
 
@@ -98,12 +100,12 @@ static int managed_list_add(const void *ptr, const void *data)
 static int managed_list_remove(const void *ptr, size_t index)
 {
 	mlist(void) *list = (void *)ptr;
-	struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(*list);
-	if (listinfo == NULL) return 2;
-	if (index >= listinfo->count) return 1;
+	struct managed_PointerInfo *datainfo = _mcinternal_ptrinfo(*list), *listinfo = _mcinternal_ptrinfo(list);
+	if (datainfo == NULL) return 1;
+	if (index >= datainfo->count) return 2;
 
-	MC_MEMMOVE(((unsigned char *)*list) + index * listinfo->typesize, ((unsigned char *)*list) + (index + 1) * listinfo->typesize, (listinfo->count - index - 1) * listinfo->typesize);
-	_mcinternal_ptrinfo(list)->count = --listinfo->count;
+	MC_MEMMOVE(((unsigned char *)*list) + index * datainfo->typesize, ((unsigned char *)*list) + (index + 1) * datainfo->typesize, (datainfo->count - index - 1) * datainfo->typesize);
+	listinfo->count = --datainfo->count;
 
 	return 0;
 }

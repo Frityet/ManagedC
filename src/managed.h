@@ -6,6 +6,18 @@
 #include <string.h>
 #include <stdint.h>
 
+/*Thread support start*/
+
+#if !defined(__STDC_NO_ATOMICS__)
+#   include <stdatomic.h>
+#   define mc_atomic _Atomic
+#else
+#   define mc_atomic
+#   define MC_ATOMIC_LOAD(var)
+#endif
+
+/*Thread support end*/
+
 #if !defined(MC_UINTPTR)
 typedef unsigned long int mc_uintptr_t;
 #endif
@@ -99,7 +111,7 @@ struct managed_PointerInfo {
      * typesize: Size of the type.
      * reference_count: Number of references to this pointer.
      */
-    size_t count, capacity, typesize, reference_count;
+    mc_atomic size_t count, capacity, typesize, reference_count;
 
     /**
     * Function to call on 0 references.
@@ -110,11 +122,6 @@ struct managed_PointerInfo {
     * Pointer to the data, should be just in front of data.
     */
     void *mc_nonnull data;
-
-    /**
-    * Write lock for the data, 7 bytes of padding was gonna be added anyways, why not just use it all?
-    */
-    unsigned long int locked;
 };
 
 /**
@@ -170,7 +177,6 @@ static void *mc_nullable managed_allocate(size_t count, size_t typesize, managed
     info->reference_count 	    = 1;
     /* The data must be right after the metadata */
     info->data 				    = info + 1;
-    info->locked				= 0;
 
     if (data != NULL)
         MC_MEMCPY(info->data, data, count * typesize);
@@ -207,8 +213,7 @@ static void *mc_nullable mc_dup(const void *mc_nonnull ptr)
 static void *mc_nonnull managed_reference(const void *mc_nonnull ptr)
 {
     struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
-    while (info->locked);
-    
+    if (info == NULL) return NULL;
     info->reference_count++;
     return (void *)ptr;
 }
@@ -223,7 +228,8 @@ static void managed_release(const void *mc_nonnull ptr)
 
     if (ptr == NULL) return;
     info = (void *)managed_info_of(ptr);
-    
+    if (info == NULL) return;
+
     info->reference_count--;
     if (info->reference_count < 1) {
         if (info->free != NULL)
@@ -231,6 +237,7 @@ static void managed_release(const void *mc_nonnull ptr)
                 info->free(((unsigned char *)ptr) + i * info->typesize);
 
         MC_FREE(info);
+        /* If we don't free the ptr, unlock, else we would invoke UB */
     }
 }
 static void mc_free(const void *mc_nonnull ptr)
@@ -250,5 +257,6 @@ static void *mc_nullable managed_to_unmanaged(const void *mc_nonnull ptr)
 }
 
 #undef _mcinternal_ptrinfo
+#undef MC_SOURCE_PRIVATE
 
 #endif
