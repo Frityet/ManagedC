@@ -18,7 +18,6 @@
 #if defined(WIN32)
 #   define MC_WIN32 1
 #   include <windows.h>
-#   message
 #else
 #   define MC_WIN32 0
 #endif
