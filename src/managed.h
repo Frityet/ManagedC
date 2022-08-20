@@ -1,4 +1,3 @@
-#include <sys/_pthread/_pthread_mutex_t.h>
 #if !defined(MANAGEDC_MAIN)
 #define MANAGEDC_MAIN
 
@@ -10,6 +9,7 @@
 #if defined(_POSIX_VERSION) || defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
 #   define MC_POSIX 1
 #   include <unistd.h>
+#   include <pthread.h>
 #else
 #   define MC_POSIX 0
 #endif
