@@ -13,10 +13,12 @@
 #else
 #   define MC_POSIX 0
 #endif
+// #pragma message("Including Windows.h")
 
 #if defined(WIN32)
 #   define MC_WIN32 1
-#   include <Windows.h>
+#   include <windows.h>
+#   message
 #else
 #   define MC_WIN32 0
 #endif
