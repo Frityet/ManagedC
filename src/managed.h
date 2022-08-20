@@ -39,8 +39,7 @@
 #       define MC_MUTEX 1
 #   elif defined(MC_WIN32)
 /* Don't ask, Windows fucking hates typedef for some reason */
-#       define mc_mutex_t HANDLE
-        // typedef HANDLE mc_mutex_t;
+        typedef HANDLE mc_mutex_t;
 #       define MC_MUTEX 1
 #   else
 #       warning Mutexes disabled
