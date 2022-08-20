@@ -13,7 +13,8 @@ local CFLAGS = {
     "-Wno-cast-qual",
     "-Wno-bad-function-cast",
     "-Wno-atomic-implicit-seq-cst",
-    "-Wno-gnu-statement-expression"
+    "-Wno-gnu-statement-expression",
+    "-Wno-nullability-extension"
 }
 
 if ANSI then 

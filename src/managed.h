@@ -1,3 +1,4 @@
+#include <sys/_pthread/_pthread_mutex_t.h>
 #if !defined(MANAGEDC_MAIN)
 #define MANAGEDC_MAIN
 
@@ -5,6 +6,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+
+#if defined(_POSIX_VERSION) || defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+#   define MC_POSIX 1
+#   include <unistd.h>
+#else
+#   define MC_POSIX 0
+#endif
+
+#if defined(WIN32)
+#   define MC_WIN32 1
+#   include <Windows.h>
+#else
+#   define MC_WIN32 0
+#endif
 
 /*Thread support start*/
 
@@ -16,10 +31,24 @@
 #   define MC_ATOMIC_LOAD(var)
 #endif
 
+#if !defined(MC_MUTEX_T)
+    #if MC_POSIX
+        typedef pthread_mutex_t mc_mutex_t;
+#       define MC_MUTEX 1
+#   elif defined(MC_WIN32)
+        typedef HANDLE mc_mutex_t;
+#       define MC_MUTEX 1
+#   else
+#       warning Mutexes disabled
+#       define MC_MUTEX 0
+#   endif
+    
+#endif
+
 /*Thread support end*/
 
 #if !defined(MC_UINTPTR)
-typedef unsigned long int mc_uintptr_t;
+    typedef unsigned long int mc_uintptr_t;
 #endif
 
 #if !defined(MC_GUARDPAGE_MAX)
@@ -48,7 +77,7 @@ typedef unsigned long int mc_uintptr_t;
 #	define MC_ANSI 0
 #endif
 
-#if defined(__clang__) && defined(__llvm__) && !defined(MC_ANSI)
+#if defined(__clang__) && defined(__llvm__) && !MC_ANSI
 #	define MC_LLVM 1
 #else
 #	define MC_LLVM 0
@@ -72,8 +101,8 @@ typedef unsigned long int mc_uintptr_t;
 #		define mc_nullable _Nullable
 # 		define mc_nonnull _Nonnull
 # 		define mc_nocapture __block
-# 		define mc_defer mc_attribute(cleanup(_mc_rundefer)) void (^mc_nonnull MC_concat1(__LINE__))(void) = ^ 
-static void _mc_rundefer(void (^mc_nonnull *mc_nonnull cb)(void)) { (*cb)(); }
+# 		define mc_defer mc_attribute(cleanup(_mc_rundefer   )) void (^mc_nonnull MC_concat1(__LINE__))(void) = ^ 
+        static void _mc_rundefer(void (^mc_nonnull *mc_nonnull cb)(void)) { (*cb)(); }
 
 #	else
 #		define mc_nullable 	
@@ -86,16 +115,16 @@ static void _mc_rundefer(void (^mc_nonnull *mc_nonnull cb)(void)) { (*cb)(); }
 #if MC_ANSI
 #	define mc_auto Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!
 #else 
-static void managed_release(const void *mc_nonnull ptr);
-static void managed_release_ptr(void *mc_nonnull addr)
-{
-    void **ptr = addr;
-    if (*ptr)
+    static void managed_release(const void *mc_nonnull ptr);
+    static void managed_release_ptr(void *mc_nonnull addr)
     {
-        managed_release(*ptr);
-        *ptr = NULL;
+        void **ptr = addr;
+        if (*ptr)
+        {
+            managed_release(*ptr);
+            *ptr = NULL;
+        }
     }
-}
 
 #	define mc_auto mc_attribute(cleanup(managed_release_ptr))
 #endif
@@ -116,12 +145,19 @@ struct managed_PointerInfo {
     /**
     * Function to call on 0 references.
     */
-    managed_Free_f *mc_nonnull free;
+    managed_Free_f *mc_nullable free;
 
     /**
     * Pointer to the data, should be just in front of data.
     */
     void *mc_nonnull data;
+
+#if MC_MUTEX
+    /**
+    * 
+    */
+    mc_mutex_t lock;
+#endif
 };
 
 /**
@@ -210,7 +246,7 @@ static void *mc_nullable mc_dup(const void *mc_nonnull ptr)
 /**
 * Gets a reference to the ptr, and incrememnts it's reference count
 */
-static void *mc_nonnull managed_reference(const void *mc_nonnull ptr)
+static void *mc_nullable managed_reference(const void *mc_nonnull ptr)
 {
     struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
     if (info == NULL) return NULL;

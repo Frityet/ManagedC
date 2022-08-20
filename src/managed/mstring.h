@@ -10,7 +10,7 @@
 typedef MSTRING_CHAR_T mc_char_t;
 #endif
 
-typedef mc_char_t mstring;
+typedef mc_char_t mstring_t;
 
 #define _mcinternal_ptrinfo(ptr) ((struct managed_PointerInfo *)managed_info_of(ptr))
 
@@ -19,9 +19,9 @@ typedef mc_char_t mstring;
 /**
 * Creates metadata for the str pointer, does not copy any bytes
 */
-static mstring *mc_nullable managed_string(const mc_char_t *mc_nonnull str, size_t len)
+static mstring_t *mc_nullable managed_string(const mc_char_t *mc_nonnull str, size_t len)
 {
-	mstring *s = managed_allocate(len + 1, sizeof(mc_char_t), NULL, NULL);
+	mstring_t *s = managed_allocate(len + 1, sizeof(mc_char_t), NULL, NULL);
 	if (s == NULL) return NULL;
     MC_MEMCPY(s, str, len);
 	s[len] = '\0';
@@ -30,20 +30,20 @@ static mstring *mc_nullable managed_string(const mc_char_t *mc_nonnull str, size
 
 	return s;
 }
-static mstring *mc_nullable mstr(const mc_char_t *mc_nonnull str)
+static mstring_t *mc_nullable mstr(const mc_char_t *mc_nonnull str)
 { return managed_string(str, strlen(str)); }
 
 
 /**
 * Duplicates the managed string str
 */
-static mstring *mc_nullable managed_string_duplicate(const mstring *mc_nonnull str)
+static mstring_t *mc_nullable managed_string_duplicate(const mstring_t *mc_nonnull str)
 {
 	long int length = mstrlen(str); 
 	if (length == -1) return NULL;
 	return managed_string(str, (size_t)length);
 }
-static mstring *mc_nullable mstrdup(const mstring *mc_nonnull str)
+static mstring_t *mc_nullable mstrdup(const mstring_t *mc_nonnull str)
 { return managed_string_duplicate(str); }
 
 #define mstrcat_unsafe(str1, str2) managed_string_concatenate(str1, str2, mstrlen(str2) < 0 ? strlen(str2) : mstrlen(str2))
@@ -53,9 +53,9 @@ static mstring *mc_nullable mstrdup(const mstring *mc_nonnull str)
 /**
 * Allocates a new string of needed size, and concatenates the 2 strings into it
 */
-static mstring *mc_nullable managed_string_concatenate(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2, size_t s2len)
+static mstring_t *mc_nullable managed_string_concatenate(mstring_t *mc_nonnull s1, const mc_char_t *mc_nonnull s2, size_t s2len)
 {
-	mstring *s = NULL;
+	mstring_t *s = NULL;
 	long int s1len = mstrlen(s1), total;
 	if (s1len < 1) return NULL;
 	total = (long int)s1len + (long int)s2len;
@@ -63,8 +63,8 @@ static mstring *mc_nullable managed_string_concatenate(mstring *mc_nonnull s1, c
 	s = managed_allocate((size_t)total + 1, sizeof(mc_char_t), NULL, NULL);
 	if (s == NULL) return NULL;
 	MC_MEMCPY(s, s1, (size_t)s1len); /* It cannot be a param for data because that assumes that sizeof(data) == count * typesize */
-	MC_MEMCPY((mstring *)(s + s1len), s2, s2len);
-	((mstring *)s)[total] = '\0';
+	MC_MEMCPY((mstring_t *)(s + s1len), s2, s2len);
+	((mstring_t *)s)[total] = '\0';
 
 	_mcinternal_ptrinfo(s)->count--; /* Don't count the null terminator */
 
@@ -75,7 +75,7 @@ static mstring *mc_nullable managed_string_concatenate(mstring *mc_nonnull s1, c
 /**
 * Compares each character of both strings, returning 0 if not equal, and 1 if equal
 */
-static int managed_string_equals(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2, size_t s2len)
+static int managed_string_equals(mstring_t *mc_nonnull s1, const mc_char_t *mc_nonnull s2, size_t s2len)
 {
 	long int s1len = mstrlen(s1), i = 0;
 	if (s1len == -1) s1len = (long int)strlen(s1);
@@ -87,7 +87,7 @@ static int managed_string_equals(mstring *mc_nonnull s1, const mc_char_t *mc_non
 	return 1;
 }
 
-static int mstreq_unsafe(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2)
+static int mstreq_unsafe(mstring_t *mc_nonnull s1, const mc_char_t *mc_nonnull s2)
 {
     long int s1len = mstrlen(s1), s2len = mstrlen(s2), i = 0;
     if (s1len == -1) s1len = (long int)strlen(s1);
@@ -100,10 +100,10 @@ static int mstreq_unsafe(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2)
     return 1;
 }
 
-static int mstreq(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2)
+static int mstreq(mstring_t *mc_nonnull s1, const mc_char_t *mc_nonnull s2)
 { return managed_string_equals(s1, s2, strlen(s2)); }
 
-static int mstrneq(mstring *mc_nonnull s1, const mc_char_t *mc_nonnull s2, size_t len)
+static int mstrneq(mstring_t *mc_nonnull s1, const mc_char_t *mc_nonnull s2, size_t len)
 { return managed_string_equals(s1, s2, len); }
 
 #endif

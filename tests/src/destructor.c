@@ -2,7 +2,7 @@
 
 struct MyStruct {
     int *array;
-    mstring *str;
+    mstring_t *str;
     struct managed_LinkedList *list;
 };
 

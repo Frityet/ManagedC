@@ -3,11 +3,11 @@
 
 declaretest(string)
 {
-	mstring *str = mstr("Hello, "), *full = NULL;
+	mstring_t *str = mstr("Hello, "), *full = NULL;
 	ASSERT(str != NULL, "Could not allocate string!");
 
 	{
-		mstring *str2 = mstrcat(str, "World!");
+		mstring_t *str2 = mstrcat(str, "World!");
 		ASSERT(str2 != NULL, "Could not allocate string!");
 		full = mc_ref(str2);
 		mc_free(str);

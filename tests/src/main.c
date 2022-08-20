@@ -9,7 +9,7 @@
 int main()
 {
 	size_t i = 0, failc = 0;
-	struct Test tests[128];
+	struct Test tests[16];
 
 	extern struct Test TESTNAME(alloc), TESTNAME(realloc), TESTNAME(list), TESTNAME(string), TESTNAME(linkedlist), TESTNAME(mcauto), TESTNAME(mcdefer), TESTNAME(destructor);
 	tests[__COUNTER__] = TESTNAME(alloc);

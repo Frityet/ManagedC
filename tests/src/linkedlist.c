@@ -3,8 +3,8 @@
 
 declaretest(linkedlist)
 {
-	struct managed_LinkedList *list = mllist_new(mstring *, managed_release);
-    mstring *s1 = mstr("Hello, "), *s2 = mstr("World"), *s3 = mstr("!");
+	struct managed_LinkedList *list = mllist_new(mstring_t *, managed_release);
+    mstring_t *s1 = mstr("Hello, "), *s2 = mstr("World"), *s3 = mstr("!");
 
 	mllist_add(list, &s1);
 	mllist_add(list, &s2);
@@ -12,7 +12,7 @@ declaretest(linkedlist)
 
 	ASSERT(*list->length == 3, "Count did not match!");
 	{	
-		mstring **str1 = mllist_get(list, 0),
+		mstring_t **str1 = mllist_get(list, 0),
 				**str2 = mllist_get(list, 1),
 				**str3 = mllist_get(list, 2);
         size_t s1len, s2len, s3len;

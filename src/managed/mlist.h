@@ -3,18 +3,15 @@
 
 #include "managed.h"
 
-#if MC_ANSI
-#	define mlist(T) T *const
-#else
-#	define mlist(T) mc_typeof(T *const)
-#endif
+#define mlist_t(T) T *const
+
 
 #define _mcinternal_ptrinfo(ptr) ((struct managed_PointerInfo *)managed_info_of(ptr))
 
-#define MC_ASSERT_IS_MLIST(list) (({ mlist(__typeof__(**list)) *_list_test_t_ = list; _list_test_t_; }))
-#define MC_ASSERT_DATA_TYPE(list, obj) (({ __typeof__(**list) _obj_test_t_ = *(obj); (obj); }))
+#define MC_ASSERT_IS_MLIST(list) (({ mlist_t(mc_typeof(**list)) *_list_test_t_ = list; _list_test_t_; }))
+#define MC_ASSERT_DATA_TYPE(list, obj) (({ mc_typeof(**list) *_obj_test_t_ = (obj); (obj); }))
 
-static void managed_list_free(const mlist(void) *list)
+static void managed_list_free(const mlist_t(void) *list)
 {
 	managed_release(*list);
 	/* Because we set the metadata for the list beforehand, we must now reset it to 0 to avoid the free function being called in memory we do not own */
@@ -22,8 +19,8 @@ static void managed_list_free(const mlist(void) *list)
 	_mcinternal_ptrinfo(list)->capacity = 0;
 }
 
-#define mlist_new(type, free) (mlist(type) *)managed_list(sizeof(type), 2, free, NULL)
-static mlist(void) *managed_list(size_t typesize, size_t count, managed_Free_f *free, void *data)
+#define mlist_new(type, free) (mlist_t(type) *)managed_list(sizeof(type), 2, free, NULL)
+static mlist_t(void) *managed_list(size_t typesize, size_t count, managed_Free_f *free, void *data)
 {
     /* If we try and reallocate a pointer by itself, all existing references will break. */
     /* To fix this for our list, we must allocate a pointer which will hold a pointer to the actual array */
@@ -99,7 +96,7 @@ static int managed_list_add(const void *ptr, const void *data)
 #endif
 static int managed_list_remove(const void *ptr, size_t index)
 {
-	mlist(void) *list = (void *)ptr;
+	mlist_t(void) *list = (void *)ptr;
 	struct managed_PointerInfo *datainfo = _mcinternal_ptrinfo(*list), *listinfo = _mcinternal_ptrinfo(list);
 	if (datainfo == NULL) return 1;
 	if (index >= datainfo->count) return 2;
@@ -117,7 +114,7 @@ static int managed_list_remove(const void *ptr, size_t index)
 #endif
 static void *managed_list_get(const void *ptr, size_t index)
 {
-	mlist(void) *list = (void *)ptr;
+	mlist_t(void) *list = (void *)ptr;
 	struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(*list);
 	if (listinfo == NULL) return NULL;
 	if (index >= listinfo->count) return NULL;
@@ -131,7 +128,7 @@ static void *managed_list_get(const void *ptr, size_t index)
 #endif
 static int managed_list_set(const void *ptr, size_t index, void *data)
 {
-	mlist(void) *list = (void *)ptr;
+	mlist_t(void) *list = (void *)ptr;
 	struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(*list);
 	if (listinfo == NULL) return 1;
 	if (index >= listinfo->count) return 2;
@@ -142,11 +139,11 @@ static int managed_list_set(const void *ptr, size_t index, void *data)
 #if MC_ANSI
 #	define mlist_copy(list) managed_list_copy(list)
 #else
-#	define mlist_copy(list) (mlist(mc_typeof(**list)) *)managed_list_copy(MC_ASSERT_IS_MLIST(list))
+#	define mlist_copy(list) (mlist_t(mc_typeof(**list)) *)managed_list_copy(MC_ASSERT_IS_MLIST(list))
 #endif
-static mlist(void) *managed_list_copy(const void *ptr)
+static mlist_t(void) *managed_list_copy(const void *ptr)
 {
-	mlist(void) *list = (void *)ptr;
+	mlist_t(void) *list = (void *)ptr;
 	struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(*list);
 	if (listinfo == NULL) return NULL;
 	return managed_list(listinfo->typesize, listinfo->count, listinfo->free, *list);

@@ -1,15 +1,14 @@
-#include "managed.h"
-#include "managed/mlist.h"
 #include "test.h"
+
 #include <stdint.h>
 
 #define LIST_SIZE (1 << 24)
 
 declaretest(list)
 {
-	mlist(size_t) *list = mlist_new(size_t, NULL);
+	mlist_t(size_t) *list = mlist_new(size_t, NULL);
 	size_t i = 0, listlen = 0;
-
+	
 	ASSERT(list != NULL, "Could not allocate list!");
 	for (i = 0; i < LIST_SIZE; i++)
 		ASSERT(mlist_add(list, &i) == 0, "Could not add item!");
@@ -18,8 +17,10 @@ declaretest(list)
 	ASSERT(listlen == LIST_SIZE, "Count did not match!");
 
 	for (i = 0; i < listlen; i++) {
-		size_t val = *(size_t *)mlist_get(list, i);
-		ASSERT(val == i, "Value did not match!");
+		size_t *val = mlist_get(list, i);
+		ASSERT(val != NULL, "Could not get value!");
+
+		ASSERT(*val == i, "Value did not match!");
 	}
 
 	mlist_set(list, 0, &i);
