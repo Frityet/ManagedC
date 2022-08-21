@@ -33,7 +33,7 @@ static void managed_linkedlist_free(struct managed_LinkedList *mc_nonnull list)
 #define mllist_new(T, free) managed_linkedlist(sizeof(T), (managed_Free_f *) free)
 static struct managed_LinkedList *mc_nullable managed_linkedlist(size_t typesize, managed_Free_f *mc_nullable free)
 {
-	struct managed_LinkedList *list = mc_new(struct managed_LinkedList, managed_linkedlist_free);
+	struct managed_LinkedList *list = mc_alloc(struct managed_LinkedList, managed_linkedlist_free);
 	const mc_atomic size_t **ptr = NULL;
 	if (list == NULL) return NULL;
 	ptr = (void *)&list->length;
@@ -55,7 +55,7 @@ static int managed_linkedlist_add(struct managed_LinkedList *mc_nonnull list, vo
 	void *temp;
 	if (tsiz < 1) return 2;
 
-	node = mc_new(struct managed_Node, NULL);
+	node = mc_alloc(struct managed_Node, NULL);
 	if (node == NULL) return 1;
 
 	temp = managed_allocate(1, (size_t)tsiz, list->free, data);

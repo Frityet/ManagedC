@@ -31,5 +31,6 @@ declaretest(list)
 	ASSERT((size_t)mc_countof(list) == LIST_SIZE - 1, "List length did not lower!");
 
 	mc_free(list);
+	
 	return success;
 }

@@ -24,7 +24,7 @@ static void *mc_nullable managed_allocate(size_t count, size_t typesize, void (*
 ````
 or
 ```c
-#define mc_new(T, free) (T *)managed_allocate(1, sizeof(T), (managed_Free_f *)free, NULL)
+#define mc_alloc(T, free) (T *)managed_allocate(1, sizeof(T), (managed_Free_f *)free, NULL)
 ```
 
 and you can release your reference using
@@ -59,19 +59,19 @@ int main()
 {
     int **alloc_list = managed_allocate(sizeof(int *), 5, free_int_ref, NULL); 
     
-    alloc_list[0] = mc_new(int, NULL);
+    alloc_list[0] = mc_alloc(int, NULL);
     *alloc_list[0] = 11;
     
-    alloc_list[1] = mc_new(int, NULL);
+    alloc_list[1] = mc_alloc(int, NULL);
     *alloc_list[1] = 10;
 
-    alloc_list[2] = mc_new(int, NULL);
+    alloc_list[2] = mc_alloc(int, NULL);
     *alloc_list[2] = 9;
     
-    alloc_list[3] = mc_new(int, NULL);
+    alloc_list[3] = mc_alloc(int, NULL);
     *alloc_list[3] = 8;
     
-    alloc_list[4] = mc_new(int, NULL);
+    alloc_list[4] = mc_alloc(int, NULL);
     *alloc_list[4] = 7;
     
     mc_free(alloc_list);
@@ -106,7 +106,7 @@ int *func_that_allocs(void)
 
 int main()
 {
-    int **refarray = mc_new(int *, managed_release);
+    int **refarray = mc_alloc(int *, managed_release);
 
     {
         int *array = func_that_allocs();
@@ -166,7 +166,7 @@ For example
 
 void func_that_allocs(void)
 {
-    mc_auto int *mem = mc_new(int, NULL);
+    mc_auto int *mem = mc_alloc(int, NULL);
     //...usage
    
     //Automatically deallocated!

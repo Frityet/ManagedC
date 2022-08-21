@@ -15,7 +15,7 @@ static void MyStruct_destroy(struct MyStruct *obj)
 
 static struct MyStruct *MyStruct_create(const char *str, size_t arrsiz, int data[])
 {
-    struct MyStruct *self = mc_new(struct MyStruct, &MyStruct_destroy);
+    struct MyStruct *self = mc_alloc(struct MyStruct, &MyStruct_destroy);
     ASSERT(self != NULL, "Could not allocate self!");
 
     self->str = mstr(str);

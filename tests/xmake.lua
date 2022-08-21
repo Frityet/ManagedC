@@ -3,7 +3,8 @@ local ANSI<const> = false
 add_rules("mode.debug", "mode.release")
 
 local CFLAGS = {
-    "-Wall", "-Wextra", "-Werror", "-Weverything",
+    "-Wall", "-Wextra", "-Werror", 
+    -- "-Weverything",
     sanitizers = "address,leak,undefined",
     "-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-unused-function", "-Wno-unused-macros",
     "-Wno-missing-variable-declarations",
