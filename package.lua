@@ -20,8 +20,9 @@ package("managedc")
     add_versions("2.2.1-beta", "ca8f6af418e3d4713cb902128232c15e2dafb071")
 
     on_install(function (package)
-        os.cp("src/managed.h", package:installdir("include"))
-        os.cp("src/managed", package:installdir("include"))
+        os.cp("**.h", package:installdir("include"), {
+            rootdir = "src/"
+        })
     end)
 
     on_test(function (package)
