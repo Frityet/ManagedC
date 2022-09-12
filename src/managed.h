@@ -202,15 +202,15 @@ static long int mc_sizeof(const void *mc_nonnull ptr)
 #define mc_alloc(T, free) (T *)managed_allocate(1, sizeof(T), (managed_Free_f *)(free), NULL)
 #define mc_array(T, count, free) (T *)managed_allocate(count, sizeof(T), (managed_Free_f *)(free), NULL)
 
-#if __STDC_VERSION__ >= 199901L && !MC_ANSI
-#   define mc_new(free, ...) ({\
-                                typedef mc_typeof(__VA_ARGS__) T;\
-                                T *data = managed_allocate();\
-                                data;\
-                              })
-#else
-#   define mc_new()
-#endif
+// #if __STDC_VERSION__ >= 199901L && !MC_ANSI
+// #   define mc_new(free, ...) ({\
+//                                   typedef mc_typeof(__VA_ARGS__) T;\
+//                                   T *data = managed_allocate();\
+//                                   data;\
+//                               })
+// #else
+// #   define mc_new()
+// #endif
 /**
 * Creates a new allocation with the managed pointer metadata. Define MC_ALLOCATOR(c, nmemb) to change the allocation function
 */
