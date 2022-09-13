@@ -76,12 +76,13 @@ static int managed_list_add(const void *ptr, const void *data)
     struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(list), *list_data_info = NULL, arrayinfo;  
     if (listinfo == NULL) return 1;
 
+    MC_MUTEX_LOCK(&listinfo->lock);
+
     /*We must copy the data because the allocation is freed later in the function*/
     list_data_info = _mcinternal_ptrinfo(*list);
     if (list_data_info == NULL) return 2; 
     arrayinfo = *list_data_info;
 
-    MC_MUTEX_LOCK(&listinfo->lock);
 
     if (arrayinfo.count >= arrayinfo.capacity) {
         /*1.5, being the closest to the golden ratio, is the most efficent cap size multiplier*/

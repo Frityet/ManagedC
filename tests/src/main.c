@@ -11,7 +11,7 @@ int main()
 	size_t i = 0, failc = 0;
 	struct Test tests[16];
 
-	extern struct Test TESTNAME(alloc), TESTNAME(realloc), TESTNAME(list), TESTNAME(string), TESTNAME(linkedlist), TESTNAME(mcauto), TESTNAME(mcdefer), TESTNAME(destructor);
+	extern struct Test TESTNAME(alloc), TESTNAME(realloc), TESTNAME(list), TESTNAME(string), TESTNAME(linkedlist), TESTNAME(mcauto), TESTNAME(mcdefer), TESTNAME(destructor), TESTNAME(threads);
 	tests[__COUNTER__] = TESTNAME(alloc);
     tests[__COUNTER__] = TESTNAME(realloc);
     tests[__COUNTER__] = TESTNAME(string);
@@ -20,6 +20,7 @@ int main()
     tests[__COUNTER__] = TESTNAME(mcdefer);
     tests[__COUNTER__] = TESTNAME(list);
     tests[__COUNTER__] = TESTNAME(destructor);
+    tests[__COUNTER__] = TESTNAME(threads);
 
 	printf("Running %d tests\n", __COUNTER__);
 
