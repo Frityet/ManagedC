@@ -8,19 +8,30 @@
 
 #define _mcinternal_ptrinfo(ptr) ((struct managed_PointerInfo *)managed_info_of(ptr))
 
+#if defined(MC_MUTEX)
+#	define _mcinternal_lock(ptr) 	(MC_MUTEX_LOCK(&_mcinternal_ptrinfo(ptr)->lock))
+#	define _mcinternal_unlock(ptr) 	(MC_MUTEX_UNLOCK(&_mcinternal_ptrinfo(ptr)->lock))
+#else
+#	define _mcinternal_lock(ptr) 	
+#	define _mcinternal_unlock(ptr) 	
+#endif
+
 #define MC_ASSERT_IS_MLIST(list) (({ mlist_t(mc_typeof(**list)) *_list_test_t_ = list; _list_test_t_; }))
 #define MC_ASSERT_DATA_TYPE(list, obj) (({ mc_typeof(**list) *_obj_test_t_ = (obj); (obj); }))
 
-static void managed_list_free(const mlist_t(void) *list)
+static void managed_list_free(mlist_t(void) *list)
 {
 	managed_release(*list);
 	/* Because we set the metadata for the list beforehand, we must now reset it to 0 to avoid the free function being called in memory we do not own */
+
+	_mcinternal_lock(list);
 	_mcinternal_ptrinfo(list)->count = 0;
 	_mcinternal_ptrinfo(list)->capacity = 0;
+	_mcinternal_unlock(list);
 }
 
 #define mlist_new(type, free) (mlist_t(type) *)managed_list(sizeof(type), 2, free, NULL)
-static mlist_t(void) *managed_list(size_t typesize, size_t count, managed_Free_f *free, void *data)
+static mlist_t(void) *managed_list(size_t typesize, size_t count, managed_Free_f *free, const void *data)
 {
     /* If we try and reallocate a pointer by itself, all existing references will break. */
     /* To fix this for our list, we must allocate a pointer which will hold a pointer to the actual array */
@@ -36,6 +47,8 @@ static mlist_t(void) *managed_list(size_t typesize, size_t count, managed_Free_f
 		return NULL;
 	}
 
+	_mcinternal_lock(*list);
+	_mcinternal_lock(list);
 	if (data != NULL)
 		MC_MEMCPY(*list, data, typesize * count);
 
@@ -47,6 +60,9 @@ static mlist_t(void) *managed_list(size_t typesize, size_t count, managed_Free_f
 	_mcinternal_ptrinfo(list)->count = 0;
 	_mcinternal_ptrinfo(list)->capacity = cap;
 
+	_mcinternal_lock(list);
+	_mcinternal_lock(*list);
+
 	return list;
 }
 
@@ -57,11 +73,13 @@ static mlist_t(void) *managed_list(size_t typesize, size_t count, managed_Free_f
 #endif
 static int managed_list_add(const void *ptr, const void *data)
 { 	/* The const in the arg is a complete lie, we must keep it or else the compiler complains though */
-	const void **list = (void *)ptr;
+	void **list = (void *)ptr;
 	struct managed_PointerInfo 	*list_data_ptr = _mcinternal_ptrinfo(*list), datainfo, *listinfo = _mcinternal_ptrinfo(list);
 	if (list_data_ptr == NULL || listinfo == NULL) return 1;
 	datainfo = *list_data_ptr; /*We need the copy or else we would start accessing potentially freed memory*/
 	
+	_mcinternal_lock(*list);
+	MC_MUTEX_LOCK(&listinfo->lock);
 	if (datainfo.count >= datainfo.capacity) {
 		/* 1.5 is the most efficent cap size multiplier because of the golden ratio or something like that */
 		/* TODO: restudy math 11 so ~~I~dont~fail~~ I understand why the golden ratio is effective */
@@ -71,13 +89,14 @@ static int managed_list_add(const void *ptr, const void *data)
 		if (newalloc == NULL || listinfo == NULL) return 1;
 
 		newallocinfo = _mcinternal_ptrinfo(newalloc);
+
+		MC_MUTEX_LOCK(&newallocinfo->lock);
 		newallocinfo->count = oldc;
 
-
 		MC_MEMCPY(newalloc, *list, datainfo.typesize * oldc);
+		MC_MUTEX_UNLOCK(&newallocinfo->lock);
 		managed_release(*list);
 		*list = newalloc;
-
 
 		listinfo->capacity = newcap;
 	}
@@ -86,6 +105,8 @@ static int managed_list_add(const void *ptr, const void *data)
 	
 	/* Update the list fields So the semantics of mc_countof(list) work */
 	listinfo->count = ++_mcinternal_ptrinfo(*list)->count;
+	MC_MUTEX_UNLOCK(&listinfo->lock);
+	_mcinternal_unlock(*list);
 	return 0;
 }
 
@@ -99,11 +120,16 @@ static int managed_list_remove(const void *ptr, size_t index)
 	mlist_t(void) *list = (void *)ptr;
 	struct managed_PointerInfo *datainfo = _mcinternal_ptrinfo(*list), *listinfo = _mcinternal_ptrinfo(list);
 	if (datainfo == NULL) return 1;
+	
+	MC_MUTEX_LOCK(&listinfo->lock);
+	MC_MUTEX_LOCK(&datainfo->lock);
 	if (index >= datainfo->count) return 2;
 
 	MC_MEMMOVE(((unsigned char *)*list) + index * datainfo->typesize, ((unsigned char *)*list) + (index + 1) * datainfo->typesize, (datainfo->count - index - 1) * datainfo->typesize);
 	listinfo->count = --datainfo->count;
 
+	MC_MUTEX_UNLOCK(&datainfo->lock);
+	MC_MUTEX_UNLOCK(&listinfo->lock);
 	return 0;
 }
 
@@ -116,9 +142,13 @@ static void *managed_list_get(const void *ptr, size_t index)
 {
 	mlist_t(void) *list = (void *)ptr;
 	struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(*list);
+	void *res = NULL;
 	if (listinfo == NULL) return NULL;
+	MC_MUTEX_LOCK(&listinfo->lock);
 	if (index >= listinfo->count) return NULL;
-	return ((unsigned char *)*list) + index * listinfo->typesize;
+	res = ((unsigned char *)*list) + index * listinfo->typesize;
+	MC_MUTEX_UNLOCK(&listinfo->lock);
+	return res;
 }
 
 #if MC_ANSI
@@ -126,13 +156,15 @@ static void *managed_list_get(const void *ptr, size_t index)
 #else
 #	define mlist_set(list, index, data) managed_list_set(MC_ASSERT_IS_MLIST(list), index, MC_ASSERT_DATA_TYPE(list, data))
 #endif
-static int managed_list_set(const void *ptr, size_t index, void *data)
+static int managed_list_set(const void *ptr, size_t index, const void *data)
 {
 	mlist_t(void) *list = (void *)ptr;
 	struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(*list);
 	if (listinfo == NULL) return 1;
+	MC_MUTEX_LOCK(&listinfo->lock);
 	if (index >= listinfo->count) return 2;
 	MC_MEMCPY(((unsigned char *)*list) + index * listinfo->typesize, data, listinfo->typesize);
+	MC_MUTEX_UNLOCK(&listinfo->lock);
 	return 0;
 }
 
@@ -143,10 +175,13 @@ static int managed_list_set(const void *ptr, size_t index, void *data)
 #endif
 static mlist_t(void) *managed_list_copy(const void *ptr)
 {
-	mlist_t(void) *list = (void *)ptr;
+	mlist_t(void) *list = (void *)ptr, *const *ret;
 	struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(*list);
 	if (listinfo == NULL) return NULL;
-	return managed_list(listinfo->typesize, listinfo->count, listinfo->free, *list);
+	MC_MUTEX_LOCK(&listinfo->lock);
+	ret = managed_list(listinfo->typesize, listinfo->count, listinfo->free, *list);
+	MC_MUTEX_UNLOCK(&listinfo->lock);
+	return ret;
 }
 
 #undef _mcinternal_ptrinfo

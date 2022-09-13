@@ -6,48 +6,36 @@
 #include <string.h>
 #include <stdint.h>
 
-#if defined(_POSIX_VERSION) || defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__)) || defined (__linux__) || defined (MC_POSIX)
 #   define MC_POSIX 1
 #   include <unistd.h>
 #   include <pthread.h>
 #else
 #   define MC_POSIX 0
 #endif
-// #pragma message("Including Windows.h")
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(MC_WIN32)
 #   define MC_WIN32 1
 #   include <windows.h>
 #else
 #   define MC_WIN32 0
 #endif
 
-/*Thread support start*/
+#if !defined(MC_NO_THREAD_SAFTEY)
 
-#if !defined(__STDC_NO_ATOMICS__)
-#   include <stdatomic.h>
-#   define mc_atomic _Atomic
-#else
-#   define mc_atomic
-#   define MC_ATOMIC_LOAD(var)
-#endif
-
-#if !defined(MC_MUTEX_T)
-    #if MC_POSIX
+#   if MC_POSIX
         typedef pthread_mutex_t mc_mutex_t;
 #       define MC_MUTEX 1
 #   elif defined(MC_WIN32)
-/* Don't ask, Windows fucking hates typedef for some reason */
         typedef HANDLE mc_mutex_t;
 #       define MC_MUTEX 1
 #   else
-#       warning Mutexes disabled
+#       pragma warning Mutex support disabled (unrecognized platform)
 #       define MC_MUTEX 0
 #   endif
-    
+#else
+#   define MC_MUTEX 0
 #endif
-
-/*Thread support end*/
 
 #if !defined(MC_UINTPTR)
     typedef unsigned long int mc_uintptr_t;
@@ -121,7 +109,7 @@
     static void managed_release_ptr(void *mc_nonnull addr)
     {
         void **ptr = addr;
-        if (*ptr)
+        if (*ptr != NULL)
         {
             managed_release(*ptr);
             *ptr = NULL;
@@ -129,6 +117,58 @@
     }
 
 #	define mc_auto mc_attribute(cleanup(managed_release_ptr))
+#endif
+
+#if MC_MUTEX
+    static int mc_mutex_create(mc_mutex_t *mc_nonnull mtx)
+    { 
+    #if defined(MC_POSIX)
+         return pthread_mutex_init(mtx, NULL) == 0 ? 0 : 1;
+    #   elif defined(MC_WIN32)
+        *mtx = CreateMutex(NULL, 0, NULL);
+        return 0;
+    #endif
+    }
+
+    static int mc_mutex_destroy(mc_mutex_t *mc_nonnull mtx)
+    {
+    #if defined(MC_POSIX)
+         return pthread_mutex_destroy(mtx);
+    #   elif defined(MC_WIN32)
+        CloseHandle(*mtx);
+        return 0;
+    #endif
+    }
+
+    static int mc_mutex_lock(mc_mutex_t *mc_nonnull mtx)
+    {
+    #if defined(MC_POSIX)
+        return pthread_mutex_lock(mtx) == 0 ? 0 : 1;
+    #   elif defined(MC_WIN32)
+        CloseHandle(*mtx);
+        return 0;
+    #endif
+    }
+
+    static int mc_mutex_unlock(mc_mutex_t *mc_nonnull mtx)
+    {
+    #if defined(MC_POSIX)
+        return pthread_mutex_unlock(mtx) == 0 ? 0 : 1;
+    #   elif defined(MC_WIN32)
+        return WaitForSingleObject(*mtx, INFINITE) == WAIT_OBJECT_0 ? 0 : 1;
+    #endif
+    }
+
+#   define MC_MUTEX_CREATE(mtx)     mc_mutex_create(mtx)
+#   define MC_MUTEX_DESTROY(mtx)    mc_mutex_destroy(mtx)
+#   define MC_MUTEX_LOCK(mtx)       mc_mutex_lock(mtx)
+#   define MC_MUTEX_UNLOCK(mtx)     mc_mutex_unlock(mtx)
+
+#else 
+#   define MC_MUTEX_CREATE(mtx) 
+#   define MC_MUTEX_DESTROY(mtx)
+#   define MC_MUTEX_LOCK(mtx)   
+#   define MC_MUTEX_UNLOCK(mtx) 
 #endif
 
 #define _mcinternal_ptrinfo(ptr) ((struct managed_PointerInfo *)managed_info_of(ptr))
@@ -142,7 +182,7 @@ struct managed_PointerInfo {
      * typesize: Size of the type.
      * reference_count: Number of references to this pointer.
      */
-    mc_atomic size_t count, capacity, typesize, reference_count;
+    size_t count, capacity, typesize, reference_count;
 
     /**
     * Function to call on 0 references.
@@ -156,7 +196,7 @@ struct managed_PointerInfo {
 
 #if MC_MUTEX
     /**
-    * 
+    * Lock on the metadata, maps to an OS specific object.
     */
     mc_mutex_t lock;
 #endif
@@ -181,36 +221,35 @@ static const struct managed_PointerInfo *mc_nullable managed_info_of(const void 
 static long int mc_countof(const void *mc_nonnull ptr)
 {
     const struct managed_PointerInfo *info = managed_info_of(ptr);
+    size_t count = 0;
     if (info == NULL) return -1;
-    else return (long int)info->count;
+    if (MC_MUTEX_LOCK((mc_mutex_t *)&info->lock) != 0) return -2;
+    count = info->count;
+    if (MC_MUTEX_UNLOCK((mc_mutex_t *)&info->lock) != 0) return -3;
+    return (long int)count;
 }
 
 static long int mc_sizeof_type(const void *mc_nonnull ptr)
 {
     const struct managed_PointerInfo *info = managed_info_of(ptr);
+    size_t size = 0;
     if (info == NULL) return -1;
-    else return (long int)info->typesize;
+    if (MC_MUTEX_LOCK((mc_mutex_t *)&info->lock) != 0) return -2;
+    size = info->typesize;
+    if (MC_MUTEX_UNLOCK((mc_mutex_t *)&info->lock) != 0) return -3;
+    return (long int)size;
 }
 
 static long int mc_sizeof(const void *mc_nonnull ptr)
 {
-    long int c = mc_countof(ptr);
-    if (c == -1) return -1;
-    return (long int)c * mc_sizeof_type(ptr);
+    long int c = mc_countof(ptr), tsiz = mc_sizeof_type(ptr);
+    if (c < 0 || tsiz < 0) return c ^ tsiz; /*TODO: do the math to make this work properly*/
+    return c * tsiz;
 }
 
 #define mc_alloc(T, free) (T *)managed_allocate(1, sizeof(T), (managed_Free_f *)(free), NULL)
 #define mc_array(T, count, free) (T *)managed_allocate(count, sizeof(T), (managed_Free_f *)(free), NULL)
 
-// #if __STDC_VERSION__ >= 199901L && !MC_ANSI
-// #   define mc_new(free, ...) ({\
-//                                   typedef mc_typeof(__VA_ARGS__) T;\
-//                                   T *data = managed_allocate();\
-//                                   data;\
-//                               })
-// #else
-// #   define mc_new()
-// #endif
 /**
 * Creates a new allocation with the managed pointer metadata. Define MC_ALLOCATOR(c, nmemb) to change the allocation function
 */
@@ -225,6 +264,10 @@ static void *mc_nullable managed_allocate(size_t count, size_t typesize, managed
     info->reference_count 	    = 1;
     /* The data must be right after the metadata */
     info->data 				    = info + 1;
+    if (!MC_MUTEX_CREATE(&info->lock)) {
+        MC_FREE(info);
+        return NULL;
+    }
 
     if (data != NULL)
         MC_MEMCPY(info->data, data, count * typesize);
@@ -241,13 +284,15 @@ static void *mc_nullable managed_copy(const void *mc_nonnull ptr, long int count
     struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
     void *alloc = NULL;
     if (info == NULL) return NULL;
+    if (MC_MUTEX_LOCK(&info->lock) != 0) return NULL;
+
     if (count < 1) count = (long int)info->count;
     alloc = managed_allocate((size_t)count, info->typesize, info->free,NULL);
     if (alloc == NULL) return NULL;
 
     /* Just in case count is larger than mc_countof(ptr) (sizing up an allocation), make sure you only copy the existing data */
     MC_MEMCPY(alloc, ptr, (size_t)(mc_sizeof_type(ptr) * mc_countof(ptr)));
-
+    MC_MUTEX_UNLOCK(&info->lock); /*TODO: what should I even do if this fails?*/
     return alloc;
 }
 
@@ -258,38 +303,46 @@ static void *mc_nullable mc_dup(const void *mc_nonnull ptr)
 /**
 * Gets a reference to the ptr, and incrememnts it's reference count
 */
-static void *mc_nullable managed_reference(const void *mc_nonnull ptr)
+static void *mc_nullable managed_reference(void *mc_nonnull ptr)
 {
     struct managed_PointerInfo *info = (void *)managed_info_of(ptr);
     if (info == NULL) return NULL;
+    if (MC_MUTEX_LOCK(&info->lock) != 0) return NULL;
     info->reference_count++;
-    return (void *)ptr;
+    if (MC_MUTEX_UNLOCK(&info->lock) != 0) return NULL;
+    return ptr;
 }
 
 /**
 * Releases a reference to the pointer, and if 0 references, frees the pointer
 */
-static void managed_release(const void *mc_nonnull ptr)
+static void managed_release(void *mc_nonnull ptr)
 {
     struct managed_PointerInfo *info = NULL;
     size_t i = 0;
 
-    if (ptr == NULL) return;
-    info = (void *)managed_info_of(ptr);
+    info = (struct managed_PointerInfo *)managed_info_of(ptr);
     if (info == NULL) return;
 
+    if (MC_MUTEX_LOCK(&info->lock) != 0) return;
     info->reference_count--;
     if (info->reference_count < 1) {
         if (info->free != NULL)
             for (i = 0; i < info->count; i++) /* Free each item of the allocation individually */
                 info->free(((unsigned char *)ptr) + i * info->typesize);
 
+        /* Unlock before freeing! */
+        if (!MC_MUTEX_UNLOCK(&info->lock)) return;/*TODO: Maybe not the best?*/
         MC_FREE(info);
-        /* If we don't free the ptr, unlock, else we would invoke UB */
     }
+    if (!MC_MUTEX_UNLOCK(&info->lock)) return;
 }
+
+/**
+* The compiler complains if void *const * is passed to void *, so use this hack
+*/
 static void mc_free(const void *mc_nonnull ptr)
-{ managed_release(ptr); }
+{ managed_release((void *)ptr); }
 
 /**
 * Creates a new, non-managed, allocation and copies all the data to it
@@ -297,10 +350,16 @@ static void mc_free(const void *mc_nonnull ptr)
 static void *mc_nullable managed_to_unmanaged(const void *mc_nonnull ptr)
 {
     struct managed_PointerInfo *info = _mcinternal_ptrinfo(ptr);
-    void *unmanaged = MC_ALLOCATOR(info->count + 1, info->typesize); /* +1 just in case it's a string */
+    void *unmanaged = NULL;
+    if (info == NULL) return NULL;
+    if (MC_MUTEX_LOCK(&info->lock) != 0) return NULL; 
+    unmanaged = MC_ALLOCATOR(info->count + 1, info->typesize); /* +1 just in case it's a string */
     if (unmanaged == NULL) return NULL;
 
     MC_MEMCPY(unmanaged, ptr, info->count * info->typesize);
+
+    /* welp, too bad I guess if it fails! */
+    MC_MUTEX_UNLOCK(&info->lock);
     return unmanaged;
 }
 
