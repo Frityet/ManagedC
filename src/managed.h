@@ -109,7 +109,7 @@
     static void managed_release_ptr(void *mc_nonnull addr)
     {
         void **ptr = addr;
-        if (*ptr != NULL)
+        if (ptr != NULL && *ptr != NULL)
         {
             managed_release(*ptr);
             *ptr = NULL;
@@ -243,7 +243,7 @@ static long int mc_sizeof_type(const void *mc_nonnull ptr)
 static long int mc_sizeof(const void *mc_nonnull ptr)
 {
     long int c = mc_countof(ptr), tsiz = mc_sizeof_type(ptr);
-    if (c < 0 || tsiz < 0) return c ^ tsiz; /*TODO: do the math to make this work properly*/
+    if (c < 0 || tsiz < 0) return -1; /*TODO: do the math to make this work properly*/
     return c * tsiz;
 }
 
@@ -264,14 +264,15 @@ static void *mc_nullable managed_allocate(size_t count, size_t typesize, managed
     info->reference_count 	    = 1;
     /* The data must be right after the metadata */
     info->data 				    = info + 1;
-    if (!MC_MUTEX_CREATE(&info->lock)) {
+    if (MC_MUTEX_CREATE(&info->lock) != 0) {
         MC_FREE(info);
         return NULL;
     }
 
     if (data != NULL)
         MC_MEMCPY(info->data, data, count * typesize);
-
+ 
+    MC_MUTEX_UNLOCK(&info->lock);
     return info->data;
 }
 
@@ -291,7 +292,7 @@ static void *mc_nullable managed_copy(const void *mc_nonnull ptr, long int count
     if (alloc == NULL) return NULL;
 
     /* Just in case count is larger than mc_countof(ptr) (sizing up an allocation), make sure you only copy the existing data */
-    MC_MEMCPY(alloc, ptr, (size_t)(mc_sizeof_type(ptr) * mc_countof(ptr)));
+    MC_MEMCPY(alloc, ptr, (size_t)(info->typesize * info->count));
     MC_MUTEX_UNLOCK(&info->lock); /*TODO: what should I even do if this fails?*/
     return alloc;
 }
@@ -328,14 +329,15 @@ static void managed_release(void *mc_nonnull ptr)
     info->reference_count--;
     if (info->reference_count < 1) {
         if (info->free != NULL)
-            for (i = 0; i < info->count; i++) /* Free each item of the allocation individually */
+            for (i = 0; i < info->count; i++) /* Free each item of the allocation individually */ {
                 info->free(((unsigned char *)ptr) + i * info->typesize);
+            }
 
         /* Unlock before freeing! */
         if (!MC_MUTEX_UNLOCK(&info->lock)) return;/*TODO: Maybe not the best?*/
         MC_FREE(info);
     }
-    if (!MC_MUTEX_UNLOCK(&info->lock)) return;
+    MC_MUTEX_UNLOCK(&info->lock);
 }
 
 /**

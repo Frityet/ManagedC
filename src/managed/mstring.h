@@ -73,16 +73,16 @@ static mstring_t *mc_nullable managed_string_concatenate(mstring_t *mc_nonnull s
 	if (s == NULL) return NULL;
 	_mcinternal_lock(s);
 	_mcinternal_lock(s1);
-	_mcinternal_lock(s2);
+	
 	MC_MEMCPY(s, s1, (size_t)s1len); /* It cannot be a param for data because that assumes that sizeof(data) == count * typesize */
 	MC_MEMCPY((mstring_t *)(s + s1len), s2, s2len);
 	((mstring_t *)s)[total] = '\0';
 
 	_mcinternal_ptrinfo(s)->count--; /* Don't count the null terminator */
 
-	_mcinternal_lock(s2);
-	_mcinternal_lock(s1);
-	_mcinternal_lock(s);
+
+	_mcinternal_unlock(s1);
+	_mcinternal_unlock(s);
 	return s;
 }
 

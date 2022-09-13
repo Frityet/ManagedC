@@ -12,10 +12,10 @@ declaretest(linkedlist)
 
 	ASSERT(*list->length == 3, "Count did not match!");
 	{	
-		mstring_t **str1 = mllist_get(list, 0),
-				**str2 = mllist_get(list, 1),
-				**str3 = mllist_get(list, 2);
-        size_t s1len, s2len, s3len;
+		mstring_t 	**str1 = mllist_get(list, 0),
+					**str2 = mllist_get(list, 1),
+					**str3 = mllist_get(list, 2);
+        size_t s1len = 0, s2len = 0, s3len = 0;
 
         ASSERT(str1 != NULL, "Could not get string!");
         ASSERT(str2 != NULL, "Could not get string!");

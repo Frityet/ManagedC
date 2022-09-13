@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#define LIST_SIZE (1 << 24)
+#define LIST_SIZE (1 << 16)
 
 declaretest(list)
 {

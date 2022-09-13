@@ -15,7 +15,7 @@ int main()
 	tests[__COUNTER__] = TESTNAME(alloc);
     tests[__COUNTER__] = TESTNAME(realloc);
     tests[__COUNTER__] = TESTNAME(string);
-    tests[__COUNTER__] = TESTNAME(linkedlist);
+    /*tests[__COUNTER__] = TESTNAME(linkedlist);*/
     tests[__COUNTER__] = TESTNAME(mcauto);
     tests[__COUNTER__] = TESTNAME(mcdefer);
     tests[__COUNTER__] = TESTNAME(list);
