@@ -3,7 +3,7 @@
 struct MyStruct {
     int *array;
     mstring_t *str;
-    struct managed_LinkedList *list;
+    mlist_t(int) *list;
 };
 
 static void MyStruct_destroy(struct MyStruct *obj)
@@ -25,7 +25,7 @@ static struct MyStruct *MyStruct_create(const char *str, size_t arrsiz, int data
     ASSERT(self->array != NULL, "Could not allocate array!");
     memcpy(self->array, data, arrsiz);
 
-    self->list = mllist_new(int, NULL);
+    self->list = mlist_new(int, NULL);
 
     return self;
 }

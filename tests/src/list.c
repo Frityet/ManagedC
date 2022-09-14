@@ -24,7 +24,6 @@ declaretest(list)
 		ASSERT(*val == i, "Value did not match!");
 	}
 
-	// int *val = _Generic(&i, mc_typeof(*list): (*list), default: _Pragma("GCC error \"type of object does not match the type of the list!\""));
 	mlist_set(list, 0, &i);
 	ASSERT(*(size_t *)mlist_get(list, 0) == LIST_SIZE, "Value did not set!");
 

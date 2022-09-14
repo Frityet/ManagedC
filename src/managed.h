@@ -24,7 +24,7 @@
 #if !defined(MC_NO_THREAD_SAFTEY)
 
 #   if MC_POSIX
-        typedef pthread_mutex_t mc_mutex_t;
+        typedef pthread_mutex_t mc_Mutex_t;
 #       define MC_MUTEX 1
 #   elif defined(MC_WIN32)
         typedef HANDLE mc_mutex_t;
@@ -125,7 +125,7 @@
 #endif
 
 #if MC_MUTEX
-    static int mc_mutex_create(mc_mutex_t *mc_nonnull mtx)
+    static int mc_mutex_create(mc_Mutex_t *mc_nonnull mtx)
     { 
     #if defined(MC_POSIX)
          return pthread_mutex_init(mtx, NULL) == 0 ? 0 : 1;
@@ -135,7 +135,7 @@
     #endif
     }
 
-    static int mc_mutex_destroy(mc_mutex_t *mc_nonnull mtx)
+    static int mc_mutex_destroy(mc_Mutex_t *mc_nonnull mtx)
     {
     #if defined(MC_POSIX)
          return pthread_mutex_destroy(mtx);
@@ -145,7 +145,7 @@
     #endif
     }
 
-    static int mc_mutex_lock(mc_mutex_t *mc_nonnull mtx)
+    static int mc_mutex_lock(mc_Mutex_t *mc_nonnull mtx)
     {
     #if defined(MC_POSIX)
         return pthread_mutex_lock(mtx) == 0 ? 0 : 1;
@@ -155,7 +155,7 @@
     #endif
     }
 
-    static int mc_mutex_unlock(mc_mutex_t *mc_nonnull mtx)
+    static int mc_mutex_unlock(mc_Mutex_t *mc_nonnull mtx)
     {
     #if defined(MC_POSIX)
         return pthread_mutex_unlock(mtx) == 0 ? 0 : 1;
@@ -203,7 +203,7 @@ struct managed_PointerInfo {
     /**
     * Lock on the metadata, maps to an OS specific object.
     */
-    mc_mutex_t lock;
+    mc_Mutex_t lock;
 #endif
 };
 
@@ -228,9 +228,9 @@ static long int mc_countof(const void *mc_nonnull ptr)
     const struct managed_PointerInfo *info = managed_info_of(ptr);
     size_t count = 0;
     if (info == NULL) return -1;
-    if (MC_MUTEX_LOCK((mc_mutex_t *)&info->lock) != 0) return -2;
+    if (MC_MUTEX_LOCK((mc_Mutex_t *)&info->lock) != 0) return -2;
     count = info->count;
-    if (MC_MUTEX_UNLOCK((mc_mutex_t *)&info->lock) != 0) return -3;
+    if (MC_MUTEX_UNLOCK((mc_Mutex_t *)&info->lock) != 0) return -3;
     return (long int)count;
 }
 
@@ -239,9 +239,9 @@ static long int mc_sizeof_type(const void *mc_nonnull ptr)
     const struct managed_PointerInfo *info = managed_info_of(ptr);
     size_t size = 0;
     if (info == NULL) return -1;
-    if (MC_MUTEX_LOCK((mc_mutex_t *)&info->lock) != 0) return -2;
+    if (MC_MUTEX_LOCK((mc_Mutex_t *)&info->lock) != 0) return -2;
     size = info->typesize;
-    if (MC_MUTEX_UNLOCK((mc_mutex_t *)&info->lock) != 0) return -3;
+    if (MC_MUTEX_UNLOCK((mc_Mutex_t *)&info->lock) != 0) return -3;
     return (long int)size;
 }
 
