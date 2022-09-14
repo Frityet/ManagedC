@@ -95,9 +95,8 @@ static int managed_string_equals(mstring_t *mc_nonnull s1, const mc_char_t *mc_n
 	long int s1len = mstrlen(s1), i = 0, managed = 1;
 	if (s1len == -1) {
 		s1len = (long int)strlen(s1);
-		_mcinternal_lock(s1);
 		managed = 0;
-	}
+	} else _mcinternal_lock(s1);
 
 	if (s1len != (long int)s2len) return 0;
 
