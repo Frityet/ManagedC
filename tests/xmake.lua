@@ -2,13 +2,17 @@ option("ansi")
 do
     set_default(false)
     set_showmenu(true)
+
+    set_description("Compiles tests with ANSI-C89 standards, which disables the mc_auto and mc_defer tests")
 end
 option_end()
 
 option("thread-sanitizer")
 do
-    set_default(true)
+    set_default(false)
     set_showmenu(true)
+
+    set_description("Compiles tests with the thread sanitizer, instead of the regular address,leak,undefined")
 end
 option_end()
 
@@ -43,7 +47,7 @@ else
     set_languages("gnu11")
 end
 
-if has_config("thread") then
+if has_config("thread-sanitizer") then
     SANITIZERS[#SANITIZERS + 1] = "thread"
 else
     SANITIZERS[#SANITIZERS + 1] = "address"
