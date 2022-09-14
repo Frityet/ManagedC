@@ -7,7 +7,7 @@
 #include "test.h"
 
 enum {
-    THREAD_COUNT = 1024
+    THREAD_COUNT = 256
 };
 
 static void *add_100_nums(mlist_t(size_t) *list)

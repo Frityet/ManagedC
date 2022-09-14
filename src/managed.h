@@ -339,6 +339,7 @@ static void managed_release(void *mc_nonnull ptr)
 
         /* Unlock before freeing! */
         if (!MC_MUTEX_UNLOCK(&info->lock)) return;/*TODO: Maybe not the best?*/
+        MC_MUTEX_DESTROY(&info->lock);
         MC_FREE(info);
     }
     MC_MUTEX_UNLOCK(&info->lock);
