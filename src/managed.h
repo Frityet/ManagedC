@@ -277,7 +277,6 @@ static void *mc_nullable managed_allocate(size_t count, size_t typesize, managed
     if (data != NULL)
         MC_MEMCPY(info->data, data, count * typesize);
  
-    MC_MUTEX_UNLOCK(&info->lock);
     return info->data;
 }
 
