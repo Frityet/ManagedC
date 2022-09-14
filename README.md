@@ -58,7 +58,7 @@ void free_int_ref(int **ref)
     mc_free(ref);
 }
 
-int main()
+int main(void)
 {
     int **alloc_list = mc_array(int *, 5, &free_int_ref); 
     
@@ -105,7 +105,7 @@ int *func_that_allocs(void)
     return mem;
 }
 
-int main()
+int main(void)
 {
     //You can pass in managed_release (not mc_free) as a param, and it will run on the value of the pointer, which must also be a managed pointer
     int **refarray = mc_alloc(int *, managed_release);
@@ -181,7 +181,7 @@ void func_that_allocs(void)
     //Automatically deallocated!
 }
 
-int main()
+int main(void)
 {
     func_that_allocs();
     func_that_allocs();
@@ -196,7 +196,7 @@ int main()
 
 If you use clang, you can use `mc_defer` to make code run once out of scope. This requires `-fBlocks` and you may have to link with `libBlocksRuntime`.
 ```c
-int main()
+int main(void)
 {
     FILE *fp = fopen("hi.txt", "rb");
     mc_defer { fclose(fp); };
