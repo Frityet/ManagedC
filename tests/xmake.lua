@@ -1,20 +1,3 @@
-local CFLAGS = {
-    "-Wall", "-Wextra", "-Werror", 
-    "-Weverything",
-    sanitizers = "address,leak,undefined",
-    "-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-unused-function", "-Wno-unused-macros",
-    "-Wno-missing-variable-declarations",
-    "-Wno-keyword-macro",
-    "-Wno-reserved-identifier",
-    "-Wno-comma",
-    "-Wno-cast-qual",
-    "-Wno-bad-function-cast",
-    "-Wno-atomic-implicit-seq-cst",
-    "-Wno-declaration-after-statement",
-    "-Wno-gnu-statement-expression",
-    "-Wno-nullability-extension"
-}
-
 option("ansi")
 do
     set_default(false)
@@ -30,9 +13,30 @@ do
 end
 option_end()
 
+local CFLAGS = {
+    "-Wall", "-Wextra", "-Werror", 
+    "-Weverything",
+    sanitizers = "address,leak,undefined",
+    "-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-unused-function", "-Wno-unused-macros",
+    "-Wno-missing-variable-declarations",
+    "-Wno-keyword-macro",
+    "-Wno-reserved-identifier",
+    "-Wno-comma",
+    "-Wno-cast-qual",
+    "-Wno-bad-function-cast",
+    "-Wno-atomic-implicit-seq-cst",
+    "-Wno-declaration-after-statement",
+}
+
+if not has_config("ansi") then
+    CFLAGS[#CFLAGS + 1] = "-Wno-gnu-statement-expression"
+    CFLAGS[#CFLAGS + 1] = "-Wno-nullability-extension"
+
+    set_languages("gnu11")
+end
+
 add_rules("mode.debug", "mode.release")
 
-set_languages("gnu11")
 
 target("tests")
 do
