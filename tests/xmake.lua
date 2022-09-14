@@ -1,7 +1,3 @@
-local ANSI<const> = true
-
-add_rules("mode.debug", "mode.release")
-
 local CFLAGS = {
     "-Wall", "-Wextra", "-Werror", 
     "-Weverything",
@@ -14,21 +10,29 @@ local CFLAGS = {
     "-Wno-cast-qual",
     "-Wno-bad-function-cast",
     "-Wno-atomic-implicit-seq-cst",
+    "-Wno-declaration-after-statement",
     "-Wno-gnu-statement-expression",
     "-Wno-nullability-extension"
 }
 
-if ANSI then 
-    CFLAGS[#CFLAGS + 1] = "-ansi"
-    CFLAGS[#CFLAGS + 1] = "-Wpedantic"
-end
+option("ansi")
+do
+    set_default(false)
+    set_showmenu(true)
 
-if ANSI then 
+    add_cflags {
+        "-ansi",
+        "-Wpedantic"
+    }
+
     set_languages("c89")
     add_defines("__STRICT_ANSI__")
-else
-    set_languages("gnu11")
 end
+option_end()
+
+add_rules("mode.debug", "mode.release")
+
+set_languages("gnu11")
 
 target("tests")
 do
@@ -36,6 +40,8 @@ do
     add_files("src/**.c")
 
     add_cflags(CFLAGS)
+
+    add_options("ansi")
     if is_mode("debug") then
         add_cflags("-fsanitize=" .. CFLAGS.sanitizers, "-fno-omit-frame-pointer")
         add_ldflags("-fsanitize=" .. CFLAGS.sanitizers)

@@ -80,6 +80,8 @@
 #	define mc_defer
 #	define mc_typeof(T)
 # 	define MC_EXPAND(t)
+#   define mc_pragma(p)
+#   define mc_warning(w)
 #else
 # 	define MC_EXPAND(...) __VA_ARGS__
 #	define MC_concat2(x) _mc_##x##_deferepr
@@ -87,6 +89,9 @@
 
 #	define mc_typeof(...) __typeof__(__VA_ARGS__)
 #	define mc_attribute(...) __attribute__((__VA_ARGS__))
+#   define mc_pragma(...) _Pragma(#__VA_ARGS__)
+#   define mc_warning(...) mc_pragma(GCC warning "\"" __VA_ARGS__ "\"")
+
 #	if MC_LLVM
 #		define mc_nullable _Nullable
 # 		define mc_nonnull _Nonnull
@@ -105,7 +110,7 @@
 #if MC_ANSI
 #	define mc_auto Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!
 #else 
-    static void managed_release(const void *mc_nonnull ptr);
+    static void managed_release(void *mc_nonnull ptr);
     static void managed_release_ptr(void *mc_nonnull addr)
     {
         void **ptr = addr;

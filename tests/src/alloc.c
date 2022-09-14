@@ -19,11 +19,5 @@ declaretest(alloc)
 
 	ASSERT(*val == 512, "Value did not set!");
 
-#	if !MC_ANSI
-	{
-		int *i = mc_new(NULL, &(int){9});
-	}
-#	endif
-
 	return success;
 }
