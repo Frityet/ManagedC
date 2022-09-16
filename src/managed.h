@@ -150,8 +150,7 @@
     #if defined(MC_POSIX)
         return pthread_mutex_lock(mtx) == 0 ? 0 : 1;
     #   elif defined(MC_WIN32)
-        CloseHandle(*mtx);
-        return 0;
+        return WaitForSingleObject(*mtx, INFINITE) == WAIT_OBJECT_0 ? 0 : 1;
     #endif
     }
 
@@ -160,7 +159,7 @@
     #if defined(MC_POSIX)
         return pthread_mutex_unlock(mtx) == 0 ? 0 : 1;
     #   elif defined(MC_WIN32)
-        return WaitForSingleObject(*mtx, INFINITE) == WAIT_OBJECT_0 ? 0 : 1;
+        return ReleaseMutex(*mtx) == 0 ? 1 : 0; /*Fuck MS*/
     #endif
     }
 
