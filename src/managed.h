@@ -110,7 +110,7 @@
 #if MC_ANSI
 #	define mc_auto Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!
 #else 
-    static void managed_release(void *mc_nonnull ptr);
+    static int managed_release(void *mc_nonnull ptr);
     static void managed_release_ptr(void *mc_nonnull addr)
     {
         void **ptr = addr;
