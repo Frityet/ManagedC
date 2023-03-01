@@ -320,17 +320,16 @@ static void *mc_nullable managed_reference(void *mc_nonnull ptr)
 /**
 * Releases a reference to the pointer, and if 0 references, frees the pointer
 */
-static int managed_release(void *mc_nonnull ptr)
+static void managed_release(void *mc_nonnull ptr)
 {
     struct managed_PointerInfo *info = NULL;
     size_t i = 0;
 
     info = (struct managed_PointerInfo *)managed_info_of(ptr);
-    if (info == NULL) return 0;
+    if (info == NULL) return;
 
-    if (MC_MUTEX_LOCK(&info->lock) != 0) return 0;
+    if (MC_MUTEX_LOCK(&info->lock) != 0) return;
     info->reference_count--;
-    int result = info->reference_count;
     if (info->reference_count < 1) {
         if (info->free != NULL)
             for (i = 0; i < info->count; i++) /* Free each item of the allocation individually */ {
@@ -338,19 +337,18 @@ static int managed_release(void *mc_nonnull ptr)
             }
 
         /* Unlock before freeing! */
-        if (!MC_MUTEX_UNLOCK(&info->lock)) return 0;/*TODO: Maybe not the best?*/
+        if (!MC_MUTEX_UNLOCK(&info->lock)) return;/*TODO: Maybe not the best?*/
         MC_MUTEX_DESTROY(&info->lock);
         MC_FREE(info);
     }
     MC_MUTEX_UNLOCK(&info->lock);
-    return result;
 }
 
 /**
 * The compiler complains if void *const * is passed to void *, so use this hack
 */
-static int mc_free(const void *mc_nonnull ptr)
-{ return managed_release((void *)ptr); }
+static void mc_free(const void *mc_nonnull ptr)
+{ void managed_release((void *)ptr); }
 
 /**
 * Creates a new, non-managed, allocation and copies all the data to it
