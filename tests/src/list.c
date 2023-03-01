@@ -31,7 +31,7 @@ declaretest(list)
 	ASSERT(*(size_t *)mlist_get(list, 0) != LIST_SIZE, "Value did not remove!");
 	ASSERT((size_t)mc_countof(list) == LIST_SIZE - 1, "List length did not lower!");
 
-	mc_free(list);
+	ASSERT(mc_free(list) == 0, "Failed to release the last reference");
 	
 	return success;
 }
