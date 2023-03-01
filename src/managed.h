@@ -110,7 +110,7 @@
 #if MC_ANSI
 #	define mc_auto Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!
 #else 
-    static int managed_release(void *mc_nonnull ptr);
+    static void managed_release(void *mc_nonnull ptr);
     static void managed_release_ptr(void *mc_nonnull addr)
     {
         void **ptr = addr;
@@ -348,7 +348,7 @@ static void managed_release(void *mc_nonnull ptr)
 * The compiler complains if void *const * is passed to void *, so use this hack
 */
 static void mc_free(const void *mc_nonnull ptr)
-{ void managed_release((void *)ptr); }
+{ managed_release((void *)ptr); }
 
 /**
 * Creates a new, non-managed, allocation and copies all the data to it
