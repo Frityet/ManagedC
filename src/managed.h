@@ -326,9 +326,9 @@ static int managed_release(void *mc_nonnull ptr)
     size_t i = 0;
 
     info = (struct managed_PointerInfo *)managed_info_of(ptr);
-    if (info == NULL) return;
+    if (info == NULL) return 0;
 
-    if (MC_MUTEX_LOCK(&info->lock) != 0) return;
+    if (MC_MUTEX_LOCK(&info->lock) != 0) return 0;
     info->reference_count--;
     int result = info->reference_count;
     if (info->reference_count < 1) {
@@ -338,7 +338,7 @@ static int managed_release(void *mc_nonnull ptr)
             }
 
         /* Unlock before freeing! */
-        if (!MC_MUTEX_UNLOCK(&info->lock)) return;/*TODO: Maybe not the best?*/
+        if (!MC_MUTEX_UNLOCK(&info->lock)) return 0;/*TODO: Maybe not the best?*/
         MC_MUTEX_DESTROY(&info->lock);
         MC_FREE(info);
     }
