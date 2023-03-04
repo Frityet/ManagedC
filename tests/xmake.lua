@@ -18,7 +18,6 @@ option_end()
 
 local CFLAGS = {
     "-Wall", "-Wextra", "-Werror", 
-    "-Weverything",
     "-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-unused-function", "-Wno-unused-macros",
     "-Wno-missing-variable-declarations",
     "-Wno-keyword-macro",

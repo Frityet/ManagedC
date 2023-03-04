@@ -27,7 +27,7 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: setup xmake
-        uses: xmake-io/github-action-setup-xmake@v1.0.12
+        uses: xmake-io/github-action-setup-xmake@v1
       
       - name: configure-debug
         run:
