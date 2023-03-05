@@ -1,3 +1,22 @@
+/**
+ * Copyright (C) 2023 Amrit Bhogal
+ *
+ * This file is part of ManagedC.
+ *
+ * ManagedC is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * ManagedC is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with ManagedC.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #if !defined(MANAGEDC_MSTRING)
 #define MANAGEDC_MSTRING
 
@@ -17,8 +36,8 @@ typedef mc_char_t mstring_t;
 #	define _mcinternal_lock(ptr) 	(MC_MUTEX_LOCK(&_mcinternal_ptrinfo(ptr)->lock))
 #	define _mcinternal_unlock(ptr) 	(MC_MUTEX_UNLOCK(&_mcinternal_ptrinfo(ptr)->lock))
 #else
-#	define _mcinternal_lock(ptr) 	
-#	define _mcinternal_unlock(ptr) 	
+#	define _mcinternal_lock(ptr)
+#	define _mcinternal_unlock(ptr)
 #endif
 
 
@@ -48,7 +67,7 @@ static mstring_t *mc_nullable mstr(const mc_char_t *mc_nonnull str)
 */
 static mstring_t *mc_nullable managed_string_duplicate(const mstring_t *mc_nonnull str)
 {
-	long int length = mstrlen(str); 
+	long int length = mstrlen(str);
 	if (length == -1) return NULL;
 	return managed_string(str, (size_t)length);
 }
@@ -73,7 +92,7 @@ static mstring_t *mc_nullable managed_string_concatenate(mstring_t *mc_nonnull s
 	if (s == NULL) return NULL;
 	_mcinternal_lock(s);
 	_mcinternal_lock(s1);
-	
+
 	MC_MEMCPY(s, s1, (size_t)s1len); /* It cannot be a param for data because that assumes that sizeof(data) == count * typesize */
 	MC_MEMCPY((mstring_t *)(s + s1len), s2, s2len);
 	((mstring_t *)s)[total] = '\0';
@@ -116,7 +135,7 @@ static int mstreq_unsafe(mstring_t *mc_nonnull s1, const mc_char_t *mc_nonnull s
 		s1_managed = 0;
 	} else _mcinternal_lock(s1);
 
-    if (s2len == -1) { 
+    if (s2len == -1) {
 		s2len = (long int)strlen(s2);
 		s2_managed = 0;
 	} else _mcinternal_lock(s2);

@@ -8,7 +8,7 @@
 
 
 
-int main()
+int main(void)
 {
     size_t i = 0, failc = 0;
     struct Test tests[16];
@@ -29,9 +29,9 @@ int main()
     for (i = 0; i < __COUNTER__ - 1; i++) {
         size_t charc = (size_t)printf("Running test %s...", tests[i].name);
         putchar('\t');
-        if (charc <= sizeof("Running test destructor...") - 2) putchar('\t'); 
+        if (charc <= sizeof("Running test destructor...") - 2) putchar('\t');
         bool res = tests[i].test();
-        if (res == failure) {         
+        if (res == failure) {
             failc++;
             fprintf(stderr, "\x1b[31m[Fail]\x1b[0m\n");
         } else printf("\x1b[32m[Success]\x1b[0m\n");

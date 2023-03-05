@@ -1,3 +1,22 @@
+/**
+ * Copyright (C) 2023 Amrit Bhogal
+ *
+ * This file is part of ManagedC.
+ *
+ * ManagedC is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * ManagedC is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with ManagedC.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #if !defined(MANAGEDC_MLIST)
 #define MANAGEDC_MLIST
 
@@ -5,15 +24,14 @@
 
 #define mlist_t(T) T *const
 
-
 #define _mcinternal_ptrinfo(ptr) ((struct managed_PointerInfo *)managed_info_of(ptr))
 
 #if defined(MC_MUTEX)
 #	define _mcinternal_lock(ptr) 	(MC_MUTEX_LOCK(&_mcinternal_ptrinfo(ptr)->lock))
 #	define _mcinternal_unlock(ptr) 	(MC_MUTEX_UNLOCK(&_mcinternal_ptrinfo(ptr)->lock))
 #else
-#	define _mcinternal_lock(ptr) 	
-#	define _mcinternal_unlock(ptr) 	
+#	define _mcinternal_lock(ptr)
+#	define _mcinternal_unlock(ptr)
 #endif
 
 #define MC_ASSERT_IS_MLIST(list) (({ mlist_t(mc_typeof(**list)) *_list_test_t_ = list; _list_test_t_; }))
@@ -73,14 +91,14 @@ static int managed_list_add(const void *ptr, const void *data)
 { 	/* The const in the arg is a complete lie, we must keep it or else the compiler complains though */
     void **list = (void **)ptr;
 
-    struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(list), *list_data_info = NULL, arrayinfo;  
+    struct managed_PointerInfo *listinfo = _mcinternal_ptrinfo(list), *list_data_info = NULL, arrayinfo;
     if (listinfo == NULL) return 1;
 
     MC_MUTEX_LOCK(&listinfo->lock);
 
     /*We must copy the data because the allocation is freed later in the function*/
     list_data_info = _mcinternal_ptrinfo(*list);
-    if (list_data_info == NULL) return 2; 
+    if (list_data_info == NULL) return 2;
     arrayinfo = *list_data_info;
 
 
@@ -126,7 +144,7 @@ static int managed_list_remove(const void *ptr, size_t index)
     mlist_t(void) *list = (void *)ptr;
     struct managed_PointerInfo *datainfo = _mcinternal_ptrinfo(*list), *listinfo = _mcinternal_ptrinfo(list);
     if (datainfo == NULL) return 1;
-    
+
     MC_MUTEX_LOCK(&listinfo->lock);
     MC_MUTEX_LOCK(&datainfo->lock);
     if (index >= datainfo->count) return 2;
@@ -192,4 +210,4 @@ static mlist_t(void) *managed_list_copy(const void *ptr)
 
 #undef _mcinternal_ptrinfo
 
-#endif 
+#endif

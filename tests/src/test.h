@@ -7,11 +7,13 @@
 #include "managed/mstring.h"
 #include "managed/mlist.h"
 
-#undef bool
-#undef true
-#undef false
+#if __STDC_VERSION__ < 199901L
+typedef enum { false, true } bool;
+#else
+#	include <stdbool.h>
+#endif
 
-typedef enum Boolean { true = 1, false = 0, success = 1, failure = 0 } bool;
+enum { success, failure };
 
 typedef bool Test_f(void);
 

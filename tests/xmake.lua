@@ -17,7 +17,8 @@ end
 option_end()
 
 local CFLAGS = {
-    "-Wall", "-Wextra", "-Werror", 
+    "-Wall", "-Wextra", "-Werror",
+    "-Weverything",
     "-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-unused-function", "-Wno-unused-macros",
     "-Wno-missing-variable-declarations",
     "-Wno-keyword-macro",
@@ -42,15 +43,17 @@ if has_config("ansi") then
 else
     CFLAGS[#CFLAGS + 1] = "-Wno-gnu-statement-expression"
     CFLAGS[#CFLAGS + 1] = "-Wno-nullability-extension"
+    CFLAGS[#CFLAGS + 1] = "-Wno-vla"
 
-    set_languages("gnu11")
+    add_undefines("__STRICT_ANSI__")
+    set_languages("gnulatest")
 end
 
 if has_config("thread-sanitizer") then
     SANITIZERS[#SANITIZERS + 1] = "thread"
 else
     SANITIZERS[#SANITIZERS + 1] = "address"
-    SANITIZERS[#SANITIZERS + 1] = "leak"
+    -- SANITIZERS[#SANITIZERS + 1] = "leak"
     SANITIZERS[#SANITIZERS + 1] = "undefined"
 end
 

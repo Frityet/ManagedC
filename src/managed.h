@@ -1,3 +1,22 @@
+/**
+ * Copyright (C) 2023 Amrit Bhogal
+ *
+ * This file is part of ManagedC.
+ *
+ * ManagedC is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * ManagedC is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with ManagedC.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #if !defined(MANAGEDC_MAIN)
 #define MANAGEDC_MAIN
 
@@ -75,7 +94,7 @@
 
 #if MC_ANSI
 #	define mc_nullable
-# 	define mc_nonnull 
+# 	define mc_nonnull
 #	define mc_attribute(t)
 #	define mc_defer
 #	define mc_typeof(T)
@@ -84,7 +103,7 @@
 #   define mc_warning(w)
 #else
 # 	define MC_EXPAND(...) __VA_ARGS__
-#	define MC_concat2(x) _mc_##x##_deferepr
+#	define MC_concat2(x) _mc_##x##_deferexpr
 #	define MC_concat1(x) MC_concat2(x)
 
 #	define mc_typeof(...) __typeof__(__VA_ARGS__)
@@ -96,20 +115,20 @@
 #		define mc_nullable _Nullable
 # 		define mc_nonnull _Nonnull
 # 		define mc_nocapture __block
-# 		define mc_defer mc_attribute(cleanup(_mc_rundefer)) void (^mc_nonnull MC_concat1(__LINE__))(void) = ^ 
+# 		define mc_defer mc_attribute(cleanup(_mc_rundefer)) void (^mc_nonnull MC_concat1(__LINE__))(void) = ^
         static void _mc_rundefer(void (^mc_nonnull *mc_nonnull cb)(void)) { (*cb)(); }
 
 #	else
-#		define mc_nullable 	
-# 		define mc_nonnull 	
+#		define mc_nullable
+# 		define mc_nonnull
 #		define mc_defer
 #		define mc_nocapture
 #	endif
 #endif
 
 #if MC_ANSI
-#	define mc_auto Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!
-#else 
+#	define mc_auto "Running in ANSI standard mode (no extensions). This macro does not automatically release the pointer!"
+#else
     static void managed_release(void *mc_nonnull ptr);
     static void managed_release_ptr(void *mc_nonnull addr)
     {
@@ -126,7 +145,7 @@
 
 #if MC_MUTEX
     static int mc_mutex_create(mc_Mutex_t *mc_nonnull mtx)
-    { 
+    {
     #if defined(MC_POSIX)
          return pthread_mutex_init(mtx, NULL) == 0 ? 0 : 1;
     #   elif defined(MC_WIN32)
@@ -168,11 +187,11 @@
 #   define MC_MUTEX_LOCK(mtx)       mc_mutex_lock(mtx)
 #   define MC_MUTEX_UNLOCK(mtx)     mc_mutex_unlock(mtx)
 
-#else 
-#   define MC_MUTEX_CREATE(mtx) 
+#else
+#   define MC_MUTEX_CREATE(mtx)
 #   define MC_MUTEX_DESTROY(mtx)
-#   define MC_MUTEX_LOCK(mtx)   
-#   define MC_MUTEX_UNLOCK(mtx) 
+#   define MC_MUTEX_LOCK(mtx)
+#   define MC_MUTEX_UNLOCK(mtx)
 #endif
 
 #define _mcinternal_ptrinfo(ptr) ((struct managed_PointerInfo *)managed_info_of(ptr))
@@ -261,7 +280,7 @@ static void *mc_nullable managed_allocate(size_t count, size_t typesize, managed
 {
     struct managed_PointerInfo *info = MC_ALLOCATOR(1, sizeof(struct managed_PointerInfo) + count * typesize);
     if (info == NULL) return NULL;
-    
+
     info->capacity = info->count= count;
     info->typesize 			   	= typesize;
     info->free 				    = free;
@@ -275,7 +294,7 @@ static void *mc_nullable managed_allocate(size_t count, size_t typesize, managed
 
     if (data != NULL)
         MC_MEMCPY(info->data, data, count * typesize);
- 
+
     return info->data;
 }
 
@@ -317,7 +336,7 @@ static void *mc_nullable managed_reference(void *mc_nonnull ptr)
     return ptr;
 }
 
-/**
+/*
 * Releases a reference to the pointer, and if 0 references, frees the pointer
 */
 static void managed_release(void *mc_nonnull ptr)
@@ -358,7 +377,7 @@ static void *mc_nullable managed_to_unmanaged(const void *mc_nonnull ptr)
     struct managed_PointerInfo *info = _mcinternal_ptrinfo(ptr);
     void *unmanaged = NULL;
     if (info == NULL) return NULL;
-    if (MC_MUTEX_LOCK(&info->lock) != 0) return NULL; 
+    if (MC_MUTEX_LOCK(&info->lock) != 0) return NULL;
     unmanaged = MC_ALLOCATOR(info->count + 1, info->typesize); /* +1 just in case it's a string */
     if (unmanaged == NULL) return NULL;
 

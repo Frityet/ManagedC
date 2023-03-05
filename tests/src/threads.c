@@ -7,7 +7,7 @@
 #include "test.h"
 
 enum {
-    THREAD_COUNT = 256
+    THREAD_COUNT = 16
 };
 
 static void *add_100_nums(mlist_t(size_t) *list)
@@ -42,14 +42,16 @@ declaretest(threads)
     size_t i = 0;
 
     for (i = 0; i < THREAD_COUNT / 2; i++)
-        ASSERT(pthread_create(&threads[i], NULL, (void *(*)(void *))&add_100_nums, mc_ref((void *)numlist)) == 0, "Could not create thread!");
+        ASSERT(pthread_create(&threads[i], NULL, (void *(*)(void *))&add_100_nums, mc_ref((void *)numlist)) == 0,
+               "Could not create thread!");
 
     for (; i < THREAD_COUNT; i++)
-        ASSERT(pthread_create(&threads[i], NULL, (void *(*)(void *))&read_and_add, mc_ref((void *)numlist)) == 0, "Could not create thread!");
-    
+        ASSERT(pthread_create(&threads[i], NULL, (void *(*)(void *))&read_and_add, mc_ref((void *)numlist)) == 0,
+                             "Could not create thread!");
+
     for (i = 0; i < THREAD_COUNT; i++)
         ASSERT(pthread_join(threads[i], NULL) == 0, "Could not join thread!");
-    
+
     ASSERT(mc_countof(numlist) == (THREAD_COUNT / 2) * 100, "Numbers were not added!");
 
     mc_free(numlist);

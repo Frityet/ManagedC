@@ -35,7 +35,7 @@ declaretest(destructor)
     int arr[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
     struct MyStruct *obj = MyStruct_create("test", 10, arr);
     ASSERT(obj != NULL, "Could not create obj");
-    
+
 
     mc_free(obj);
     return success;
